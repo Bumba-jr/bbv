@@ -46,6 +46,46 @@ export default function Header() {
           </button>
         </div>
 
+        {/* Navigation Links */}
+        <div className="hidden lg:flex items-center gap-6">
+          <Link
+            href="/"
+            className="text-gray-600 hover:text-blue-600 transition text-sm font-medium"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/analytics"
+            className="text-gray-600 hover:text-blue-600 transition text-sm font-medium"
+          >
+            Analytics
+          </Link>
+          <Link
+            href="/inventory"
+            className="text-gray-600 hover:text-blue-600 transition text-sm font-medium"
+          >
+            Inventory
+          </Link>
+          <Link
+            href="/invoices"
+            className="text-gray-600 hover:text-blue-600 transition text-sm font-medium"
+          >
+            Invoices
+          </Link>
+          <Link
+            href="/delivery"
+            className="text-gray-600 hover:text-blue-600 transition text-sm font-medium"
+          >
+            Delivery
+          </Link>
+          <Link
+            href="/loyalty"
+            className="text-gray-600 hover:text-blue-600 transition text-sm font-medium"
+          >
+            Loyalty
+          </Link>
+        </div>
+
         {/* Right Navigation */}
         <div className="flex items-center gap-5">
           {/* New Order Quick Access */}
