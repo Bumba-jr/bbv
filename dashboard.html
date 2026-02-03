@@ -1,0 +1,1152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Laundry Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/img/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./assets/img/favicon/site.webmanifest">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom animations for customer history */
+        .slide-left {
+            animation: slideLeft 0.3s ease-out;
+        }
+
+        @keyframes slideLeft {
+            from {
+                transform: translateX(0);
+            }
+
+            to {
+                transform: translateX(-25%);
+            }
+        }
+
+        .slide-in-right {
+            animation: slideInRight 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(100%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* Mobile responsive adjustments */
+        @media (max-width: 1023px) {
+            .lg\:w-1\/2 {
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="./assets/img/blue-logo.png" alt="Logo" class="w-8 h-8">
+                <h1 class="font-bold text-xl tracking-tight text-blue-600">Laundry Management</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="./new-order.html" class="text-gray-600 hover:text-blue-600 transition flex items-center gap-2">
+                    <i class="fas fa-plus-circle"></i>
+                    <span class="hidden sm:inline">New Order</span>
+                </a>
+                <a href="./all-orders.html"
+                    class="text-gray-600 hover:text-blue-600 transition flex items-center gap-2">
+                    <i class="fas fa-list-alt"></i>
+                    <span class="hidden sm:inline">All Orders</span>
+                </a>
+                <a href="./customer-portal.html" class="text-gray-600 hover:text-blue-600 transition">
+                    <i class="fas fa-users"></i>
+                </a>
+                <a href="./payment-reports.html" class="text-gray-600 hover:text-blue-600 transition">
+                    <i class="fas fa-credit-card"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        <!-- Quick Actions Hero Section -->
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white shadow-xl fade-in">
+            <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+                <div>
+                    <h2 class="text-3xl font-bold mb-3">Order Management Hub</h2>
+                    <p class="text-blue-100 text-lg max-w-2xl">
+                        Streamline your laundry business with our comprehensive order management system.
+                        Create orders, track progress, and manage customer relationships all in one place.
+                    </p>
+                </div>
+                <div class="flex flex-wrap gap-4">
+                    <a href="./new-order.html"
+                        class="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white px-6 py-3 rounded-xl font-semibold transition flex items-center gap-3 shadow-lg">
+                        <i class="fas fa-plus-circle"></i>
+                        Place New Order
+                    </a>
+                    <a href="./customer-portal.html"
+                        class="bg-white/10 hover:bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-xl font-semibold transition flex items-center gap-3 border border-white/20">
+                        <i class="fas fa-users"></i>
+                        Customer Portal
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div
+                class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow slide-up">
+                <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-shopping-bag text-blue-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Complete Order Form</h3>
+                <p class="text-gray-600 mb-4">
+                    Full-featured order creation with customer details, service selection, pickup scheduling, and
+                    payment processing.
+                </p>
+                <a href="./new-order.html"
+                    class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+                    Get Started
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow slide-up"
+                style="animation-delay: 0.1s;">
+                <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-users text-green-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Customer Portal</h3>
+                <p class="text-gray-600 mb-4">
+                    Allow customers to place orders, track status, view history, and manage their account independently.
+                </p>
+                <a href="./customer-portal.html"
+                    class="inline-flex items-center gap-2 text-green-600 hover:text-green-700 font-medium">
+                    View Portal
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow slide-up"
+                style="animation-delay: 0.2s;">
+                <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-4">
+                    <i class="fas fa-chart-bar text-purple-600 text-xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Analytics & Reports</h3>
+                <p class="text-gray-600 mb-4">
+                    Track business performance with detailed analytics, payment reports, and customer insights.
+                </p>
+                <a href="./payment-reports.html"
+                    class="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 font-medium">
+                    View Reports
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Order Process Flow -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 slide-up" style="animation-delay: 0.3s;">
+            <div class="text-center mb-8">
+                <h3 class="text-2xl font-bold text-gray-900 mb-2">How It Works</h3>
+                <p class="text-gray-600">Simple steps to manage your laundry orders efficiently</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl font-bold text-blue-600">1</span>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Create Order</h4>
+                    <p class="text-sm text-gray-600">Enter customer details and select services</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl font-bold text-green-600">2</span>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Schedule Pickup</h4>
+                    <p class="text-sm text-gray-600">Set pickup date and time preferences</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl font-bold text-purple-600">3</span>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Process Order</h4>
+                    <p class="text-sm text-gray-600">Track order status and processing</p>
+                </div>
+
+                <div class="text-center">
+                    <div class="w-16 h-16 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span class="text-2xl font-bold text-orange-600">4</span>
+                    </div>
+                    <h4 class="font-semibold text-gray-900 mb-2">Complete & Deliver</h4>
+                    <p class="text-sm text-gray-600">Process payment and deliver to customer</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 text-white slide-up"
+                style="animation-delay: 0.4s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-blue-100 text-sm">Total Orders</p>
+                        <p class="text-3xl font-bold" id="totalOrdersCount">
+                        <div
+                            class="inline-block w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin">
+                        </div>
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-shopping-bag text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 text-white slide-up"
+                style="animation-delay: 0.5s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-green-100 text-sm">Active Customers</p>
+                        <p class="text-3xl font-bold" id="activeCustomersCount">
+                        <div
+                            class="inline-block w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin">
+                        </div>
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl p-6 text-white slide-up"
+                style="animation-delay: 0.6s;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-purple-100 text-sm">Monthly Revenue</p>
+                        <p class="text-3xl font-bold" id="monthlyRevenueAmount">
+                        <div
+                            class="inline-block w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin">
+                        </div>
+                        </p>
+                    </div>
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-chart-line text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yearly Revenue Bar Chart -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 slide-up" style="animation-delay: 0.7s;">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Yearly Revenue Overview</h3>
+                    <p class="text-gray-600">Monthly revenue breakdown for the current year</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="revenueYearSelect"
+                        class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                        onchange="loadYearlyRevenue()">
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                    </select>
+                </div>
+            </div>
+            <div class="h-80">
+                <canvas id="yearlyRevenueChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Payment Status Overview -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Weekly Expenses -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 slide-up"
+                style="animation-delay: 0.8s;">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Weekly Expenses</h3>
+                    <i class="fas fa-calendar-week text-blue-500"></i>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">This Week</span>
+                        <span class="font-semibold text-gray-900" id="thisWeekExpenses">₦0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Last Week</span>
+                        <span class="font-semibold text-gray-900" id="lastWeekExpenses">₦0</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t">
+                        <span class="text-gray-600">Change</span>
+                        <span class="font-semibold" id="weeklyChange">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Year Expenses -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 slide-up"
+                style="animation-delay: 0.9s;">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Yearly Expenses</h3>
+                    <i class="fas fa-chart-line text-green-500"></i>
+                </div>
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">This Year</span>
+                        <span class="font-semibold text-gray-900" id="thisYearExpenses">₦0</span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Last Year</span>
+                        <span class="font-semibold text-gray-900" id="lastYearExpenses">₦0</span>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t">
+                        <span class="text-gray-600">Growth</span>
+                        <span class="font-semibold" id="yearlyGrowth">0%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Service Popularity Section -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 slide-up" style="animation-delay: 1.0s;">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Service Popularity</h3>
+                    <p class="text-gray-600">Most requested services and their usage statistics</p>
+                </div>
+                <button onclick="refreshServiceStats()"
+                    class="bg-blue-100 hover:bg-blue-200 text-blue-600 px-4 py-2 rounded-lg transition flex items-center gap-2">
+                    <i class="fas fa-refresh"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+
+            <div id="servicePopularityContainer">
+                <div class="flex justify-center py-8">
+                    <div
+                        class="inline-block w-8 h-8 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin">
+                    </div>
+                </div>
+            </div>
+
+            <div id="noServicesMessage" class="hidden text-center py-12">
+                <i class="fas fa-cogs text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-600 text-lg font-medium">No service data found</p>
+                <p class="text-gray-500">Service statistics will appear here</p>
+            </div>
+        </div>
+
+        <!-- Customer History Section -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 slide-up" style="animation-delay: 1.1s;">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Customer History</h3>
+                    <p class="text-gray-600">View detailed customer order history and analytics</p>
+                </div>
+                <button onclick="showCustomerHistory()"
+                    class="bg-green-100 hover:bg-green-200 text-green-600 px-6 py-3 rounded-lg transition flex items-center gap-2 font-semibold">
+                    <i class="fas fa-history"></i>
+                    <span>View History</span>
+                </button>
+            </div>
+
+            <!-- Customer History Modal/Section -->
+            <div id="customerHistorySection" class="hidden">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Customer List (Left Side) -->
+                    <div id="customerListContainer" class="w-full lg:w-1/2 transition-all duration-300">
+                        <div class="bg-gray-50 rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Customer List</h4>
+                                <button onclick="hideCustomerHistory()"
+                                    class="lg:hidden text-gray-500 hover:text-gray-700">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div class="mb-4">
+                                <input type="text" id="customerSearchInput" placeholder="Search customers..."
+                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    oninput="filterCustomers()">
+                            </div>
+
+                            <div id="customerListContent" class="space-y-3 max-h-96 overflow-y-auto">
+                                <div class="flex justify-center py-8">
+                                    <div
+                                        class="inline-block w-6 h-6 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Order Details (Right Side) -->
+                    <div id="orderDetailsContainer" class="hidden w-full lg:w-1/2 transition-all duration-300">
+                        <div class="bg-blue-50 rounded-xl p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h4 class="text-lg font-semibold text-gray-900">Order Details</h4>
+                                <button onclick="hideOrderDetails()" class="text-gray-500 hover:text-gray-700">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+
+                            <div id="orderDetailsContent">
+                                <!-- Order details will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Orders Section -->
+        <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 slide-up" style="animation-delay: 1.2s;">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h3 class="text-2xl font-bold text-gray-900 mb-2">Recent Orders</h3>
+                    <p class="text-gray-600">Latest orders with pickup details and instructions</p>
+                </div>
+                <button onclick="refreshOrders()"
+                    class="bg-blue-100 hover:bg-blue-200 text-blue-600 px-4 py-2 rounded-lg transition flex items-center gap-2">
+                    <i class="fas fa-refresh"></i>
+                    <span>Refresh</span>
+                </button>
+            </div>
+
+            <div id="recentOrdersContainer">
+                <div class="flex justify-center py-8">
+                    <div
+                        class="inline-block w-8 h-8 border-2 border-blue-300 border-t-blue-600 rounded-full animate-spin">
+                    </div>
+                </div>
+            </div>
+
+            <div id="noOrdersMessage" class="hidden text-center py-12">
+                <i class="fas fa-shopping-bag text-gray-300 text-4xl mb-4"></i>
+                <p class="text-gray-600 text-lg font-medium">No orders found</p>
+                <p class="text-gray-500">New orders will appear here</p>
+            </div>
+        </div>
+
+        <!-- Call to Action -->
+        <div class="text-center py-12 slide-up" style="animation-delay: 1.3s;">
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">Ready to Get Started?</h3>
+            <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                Transform your laundry business with our comprehensive order management system.
+                Start creating orders and managing customers today.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="./new-order.html"
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-xl font-semibold transition flex items-center justify-center gap-3 shadow-lg">
+                    <i class="fas fa-plus-circle"></i>
+                    Create Your First Order
+                </a>
+                <a href="./customer-portal.html"
+                    class="bg-gray-100 hover:bg-gray-200 text-gray-900 px-8 py-4 rounded-xl font-semibold transition flex items-center justify-center gap-3">
+                    <i class="fas fa-users"></i>
+                    Explore Customer Portal
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCGBqbJk546uJChQUrIUUIaXt20FOpnyr8",
+            authDomain: "laundry-management-b5198.firebaseapp.com",
+            projectId: "laundry-management-b5198",
+            appId: "1:253804986338:web:464940df509269255803bb",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDashboardData();
+            initializeYearlyRevenueChart();
+
+            // Set current year as default
+            const currentYear = new Date().getFullYear();
+            document.getElementById('revenueYearSelect').value = currentYear;
+        });
+
+        let yearlyRevenueChart = null;
+        let allCustomers = [];
+        let filteredCustomers = [];
+
+        async function loadDashboardData() {
+            try {
+                await Promise.all([
+                    loadOrderStats(),
+                    loadRecentOrders(),
+                    loadYearlyRevenue(),
+                    loadExpenseStats(),
+                    loadServicePopularity()
+                ]);
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        async function loadOrderStats() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentMonth = new Date().getMonth();
+                const currentDate = new Date();
+
+                // Get all orders for the current year
+                const ordersSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .get();
+
+                const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Calculate total orders
+                const totalOrders = orders.length;
+
+                // Calculate unique customers (active customers)
+                const uniqueCustomers = new Set(orders.map(order => order.customer?.phone)).size;
+
+                // Calculate monthly revenue
+                const monthlyRevenue = orders
+                    .filter(order => {
+                        const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+                        return orderDate.getMonth() === currentMonth && orderDate.getFullYear() === currentYear;
+                    })
+                    .reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+
+                // Update UI
+                document.getElementById('totalOrdersCount').textContent = totalOrders;
+                document.getElementById('activeCustomersCount').textContent = uniqueCustomers;
+                document.getElementById('monthlyRevenueAmount').textContent = `₦${formatNumber(monthlyRevenue)}`;
+
+            } catch (error) {
+                console.error('Error loading order stats:', error);
+                document.getElementById('totalOrdersCount').textContent = '0';
+                document.getElementById('activeCustomersCount').textContent = '0';
+                document.getElementById('monthlyRevenueAmount').textContent = '₦0';
+            }
+        }
+
+        async function loadRecentOrders() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const ordersSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .orderBy('timestamp', 'desc')
+                    .limit(10)
+                    .get();
+
+                const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const container = document.getElementById('recentOrdersContainer');
+                const noOrdersMessage = document.getElementById('noOrdersMessage');
+
+                if (orders.length === 0) {
+                    container.innerHTML = '';
+                    noOrdersMessage.classList.remove('hidden');
+                    return;
+                }
+
+                noOrdersMessage.classList.add('hidden');
+                container.innerHTML = orders.map(order => createOrderCard(order)).join('');
+
+            } catch (error) {
+                console.error('Error loading recent orders:', error);
+                document.getElementById('recentOrdersContainer').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error loading orders</p>
+                    </div>
+                `;
+            }
+        }
+
+        function createOrderCard(order) {
+            const statusColors = {
+                pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                processing: 'bg-blue-100 text-blue-800 border-blue-200',
+                ready: 'bg-green-100 text-green-800 border-green-200',
+                delivered: 'bg-purple-100 text-purple-800 border-purple-200'
+            };
+
+            const statusColor = statusColors[order.status] || statusColors.pending;
+            const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+
+            return `
+                <div class="bg-gray-50 rounded-xl p-6 mb-4 border border-gray-200 hover:border-blue-300 transition">
+                    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                        <div class="flex-1">
+                            <div class="flex items-center gap-3 mb-3">
+                                <h4 class="font-semibold text-gray-800">Order #${order.id.substring(0, 8)}</h4>
+                                <span class="px-3 py-1 rounded-full text-xs font-semibold border ${statusColor}">
+                                    ${(order.status || 'pending').toUpperCase()}
+                                </span>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                                <div>
+                                    <p class="mb-2">
+                                        <i class="fas fa-user mr-2 text-blue-500"></i>
+                                        <strong>Customer:</strong> ${order.customer?.name || 'N/A'}
+                                    </p>
+                                    <p class="mb-2">
+                                        <i class="fas fa-phone mr-2 text-green-500"></i>
+                                        <strong>Phone:</strong> ${order.customer?.phone || 'N/A'}
+                                    </p>
+                                    <p class="mb-2">
+                                        <i class="fas fa-calendar mr-2 text-purple-500"></i>
+                                        <strong>Date:</strong> ${orderDate.toLocaleDateString()} at ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
+                                </div>
+                                
+                                <div>
+                                    <p class="mb-2">
+                                        <i class="fas fa-map-marker-alt mr-2 text-red-500"></i>
+                                        <strong>Pickup:</strong> ${order.pickupAddress || order.customer?.address || 'N/A'}
+                                    </p>
+                                    <p class="mb-2">
+                                        <i class="fas fa-clock mr-2 text-orange-500"></i>
+                                        <strong>Time:</strong> ${order.pickupDate || 'N/A'} ${order.pickupTime ? `(${order.pickupTime})` : ''}
+                                    </p>
+                                    <p class="mb-2">
+                                        <i class="fas fa-list mr-2 text-indigo-500"></i>
+                                        <strong>Items:</strong> ${order.items ? order.items.length : 0} service(s)
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            ${order.specialInstructions ? `
+                                <div class="mt-3 p-3 bg-blue-50 rounded-lg">
+                                    <p class="text-sm">
+                                        <i class="fas fa-sticky-note mr-2 text-blue-600"></i>
+                                        <strong>Instructions:</strong> ${order.specialInstructions}
+                                    </p>
+                                </div>
+                            ` : ''}
+                        </div>
+                        
+                        <div class="text-right">
+                            <div class="text-2xl font-bold text-blue-600 mb-1">₦${parseFloat(order.totalAmount || 0).toFixed(2)}</div>
+                            ${order.paymentMethod ? `<p class="text-sm text-gray-500 mb-1">via ${order.paymentMethod}</p>` : ''}
+                            ${order.paymentStatus ? `<p class="text-sm font-medium ${order.paymentStatus === 'paid' ? 'text-green-600' : 'text-orange-600'}">${order.paymentStatus.toUpperCase()}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toFixed(2);
+        }
+
+        function refreshOrders() {
+            loadRecentOrders();
+        }
+
+        // Yearly Revenue Chart Functions
+        function initializeYearlyRevenueChart() {
+            const ctx = document.getElementById('yearlyRevenueChart').getContext('2d');
+            yearlyRevenueChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+                    datasets: [{
+                        label: 'Revenue (₦)',
+                        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                        borderColor: 'rgba(59, 130, 246, 1)',
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return '₦' + formatNumber(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        async function loadYearlyRevenue() {
+            try {
+                const selectedYear = parseInt(document.getElementById('revenueYearSelect').value);
+                const ordersSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${selectedYear}`)
+                    .get();
+
+                const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const monthlyRevenue = new Array(12).fill(0);
+
+                orders.forEach(order => {
+                    const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+                    if (orderDate.getFullYear() === selectedYear) {
+                        const month = orderDate.getMonth();
+                        monthlyRevenue[month] += parseFloat(order.totalAmount || 0);
+                    }
+                });
+
+                if (yearlyRevenueChart) {
+                    yearlyRevenueChart.data.datasets[0].data = monthlyRevenue;
+                    yearlyRevenueChart.update();
+                }
+            } catch (error) {
+                console.error('Error loading yearly revenue:', error);
+            }
+        }
+
+        async function loadExpenseStats() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const currentDate = new Date();
+
+                // Get current week dates
+                const startOfWeek = new Date(currentDate);
+                startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+                // Get last week dates
+                const startOfLastWeek = new Date(startOfWeek);
+                startOfLastWeek.setDate(startOfWeek.getDate() - 7);
+                const endOfLastWeek = new Date(startOfWeek);
+                endOfLastWeek.setDate(startOfWeek.getDate() - 1);
+
+                const ordersSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .get();
+
+                const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                // Calculate weekly expenses
+                const thisWeekExpenses = orders
+                    .filter(order => {
+                        const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+                        return orderDate >= startOfWeek && orderDate <= endOfWeek;
+                    })
+                    .reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+
+                const lastWeekExpenses = orders
+                    .filter(order => {
+                        const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+                        return orderDate >= startOfLastWeek && orderDate <= endOfLastWeek;
+                    })
+                    .reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+
+                // Calculate yearly expenses
+                const thisYearExpenses = orders
+                    .filter(order => {
+                        const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+                        return orderDate.getFullYear() === currentYear;
+                    })
+                    .reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+
+                // Get last year expenses
+                const lastYearSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear - 1}`)
+                    .get();
+
+                const lastYearOrders = lastYearSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const lastYearExpenses = lastYearOrders.reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+
+                // Calculate changes
+                const weeklyChange = lastWeekExpenses > 0 ? ((thisWeekExpenses - lastWeekExpenses) / lastWeekExpenses * 100) : 0;
+                const yearlyGrowth = lastYearExpenses > 0 ? ((thisYearExpenses - lastYearExpenses) / lastYearExpenses * 100) : 0;
+
+                // Update UI
+                document.getElementById('thisWeekExpenses').textContent = `₦${formatNumber(thisWeekExpenses)}`;
+                document.getElementById('lastWeekExpenses').textContent = `₦${formatNumber(lastWeekExpenses)}`;
+                document.getElementById('thisYearExpenses').textContent = `₦${formatNumber(thisYearExpenses)}`;
+                document.getElementById('lastYearExpenses').textContent = `₦${formatNumber(lastYearExpenses)}`;
+
+                const weeklyChangeElement = document.getElementById('weeklyChange');
+                weeklyChangeElement.textContent = `${weeklyChange >= 0 ? '+' : ''}${weeklyChange.toFixed(1)}%`;
+                weeklyChangeElement.className = `font-semibold ${weeklyChange >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+                const yearlyGrowthElement = document.getElementById('yearlyGrowth');
+                yearlyGrowthElement.textContent = `${yearlyGrowth >= 0 ? '+' : ''}${yearlyGrowth.toFixed(1)}%`;
+                yearlyGrowthElement.className = `font-semibold ${yearlyGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`;
+
+            } catch (error) {
+                console.error('Error loading expense stats:', error);
+            }
+        }
+
+        async function loadServicePopularity() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const ordersSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .get();
+
+                const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const serviceStats = {};
+
+                // Count service usage
+                orders.forEach(order => {
+                    if (order.items && Array.isArray(order.items)) {
+                        order.items.forEach(item => {
+                            const serviceName = item.description || item.name || 'Unknown Service';
+                            if (!serviceStats[serviceName]) {
+                                serviceStats[serviceName] = {
+                                    name: serviceName,
+                                    count: 0,
+                                    revenue: 0
+                                };
+                            }
+                            serviceStats[serviceName].count += parseInt(item.quantity || 1);
+                            serviceStats[serviceName].revenue += parseFloat(item.price || 0) * parseInt(item.quantity || 1);
+                        });
+                    }
+                });
+
+                const sortedServices = Object.values(serviceStats)
+                    .sort((a, b) => b.count - a.count)
+                    .slice(0, 10);
+
+                const container = document.getElementById('servicePopularityContainer');
+                const noServicesMessage = document.getElementById('noServicesMessage');
+
+                if (sortedServices.length === 0) {
+                    container.innerHTML = '';
+                    noServicesMessage.classList.remove('hidden');
+                    return;
+                }
+
+                noServicesMessage.classList.add('hidden');
+                container.innerHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        ${sortedServices.map((service, index) => `
+                            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <h5 class="font-semibold text-gray-900">${service.name}</h5>
+                                    <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2 py-1 rounded-full">#${index + 1}</span>
+                                </div>
+                                <div class="flex justify-between text-sm text-gray-600">
+                                    <span>Orders: ${service.count}</span>
+                                    <span>Revenue: ₦${formatNumber(service.revenue)}</span>
+                                </div>
+                                <div class="mt-2 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-600 h-2 rounded-full" style="width: ${(service.count / sortedServices[0].count) * 100}%"></div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('Error loading service popularity:', error);
+                document.getElementById('servicePopularityContainer').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error loading service data</p>
+                    </div>
+                `;
+            }
+        }
+
+        function refreshServiceStats() {
+            loadServicePopularity();
+        }
+
+        // Customer History Functions
+        async function showCustomerHistory() {
+            const section = document.getElementById('customerHistorySection');
+            section.classList.remove('hidden');
+            await loadCustomerList();
+        }
+
+        function hideCustomerHistory() {
+            const section = document.getElementById('customerHistorySection');
+            section.classList.add('hidden');
+            hideOrderDetails();
+        }
+
+        async function loadCustomerList() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const ordersSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .get();
+
+                const orders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const customerMap = {};
+
+                // Group orders by customer
+                orders.forEach(order => {
+                    const phone = order.customer?.phone;
+                    if (phone) {
+                        if (!customerMap[phone]) {
+                            customerMap[phone] = {
+                                ...order.customer,
+                                phone: phone,
+                                orders: [],
+                                totalSpent: 0,
+                                lastOrderDate: null
+                            };
+                        }
+                        customerMap[phone].orders.push(order);
+                        customerMap[phone].totalSpent += parseFloat(order.totalAmount || 0);
+
+                        const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+                        if (!customerMap[phone].lastOrderDate || orderDate > customerMap[phone].lastOrderDate) {
+                            customerMap[phone].lastOrderDate = orderDate;
+                        }
+                    }
+                });
+
+                allCustomers = Object.values(customerMap)
+                    .sort((a, b) => b.lastOrderDate - a.lastOrderDate);
+
+                filteredCustomers = [...allCustomers];
+                displayCustomerList();
+
+            } catch (error) {
+                console.error('Error loading customer list:', error);
+                document.getElementById('customerListContent').innerHTML = `
+                    <div class="text-center py-8 text-red-500">
+                        <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
+                        <p>Error loading customers</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayCustomerList() {
+            const container = document.getElementById('customerListContent');
+
+            if (filteredCustomers.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-users text-3xl mb-2"></i>
+                        <p>No customers found</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = filteredCustomers.map(customer => `
+                <div class="bg-white rounded-lg p-4 border border-gray-200 hover:border-blue-300 transition cursor-pointer"
+                     onclick="viewCustomerDetails('${customer.phone}')">
+                    <div class="flex items-center justify-between mb-2">
+                        <h5 class="font-semibold text-gray-900">${customer.name || 'Unknown'}</h5>
+                        <span class="text-xs text-gray-500">${customer.orders.length} orders</span>
+                    </div>
+                    <p class="text-sm text-gray-600 mb-1">${customer.phone}</p>
+                    <div class="flex justify-between text-xs text-gray-500">
+                        <span>Total: ₦${formatNumber(customer.totalSpent)}</span>
+                        <span>Last: ${customer.lastOrderDate.toLocaleDateString()}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterCustomers() {
+            const searchTerm = document.getElementById('customerSearchInput').value.toLowerCase();
+            filteredCustomers = allCustomers.filter(customer =>
+                (customer.name || '').toLowerCase().includes(searchTerm) ||
+                (customer.phone || '').includes(searchTerm)
+            );
+            displayCustomerList();
+        }
+
+        function viewCustomerDetails(phone) {
+            const customer = allCustomers.find(c => c.phone === phone);
+            if (!customer) return;
+
+            const isMobile = window.innerWidth < 1024;
+
+            if (isMobile) {
+                // Mobile: Hide customer list, show order details
+                document.getElementById('customerListContainer').classList.add('hidden');
+            } else {
+                // Desktop: Animate customer list to left, show order details on right
+                const customerContainer = document.getElementById('customerListContainer');
+                customerContainer.classList.add('lg:w-1/2');
+            }
+
+            const orderDetailsContainer = document.getElementById('orderDetailsContainer');
+            orderDetailsContainer.classList.remove('hidden');
+
+            // Populate order details
+            const content = document.getElementById('orderDetailsContent');
+            content.innerHTML = `
+                <div class="mb-6">
+                    <h5 class="text-xl font-bold text-gray-900 mb-2">${customer.name || 'Unknown Customer'}</h5>
+                    <div class="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                            <span class="text-gray-600">Phone:</span>
+                            <span class="font-medium">${customer.phone}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Total Orders:</span>
+                            <span class="font-medium">${customer.orders.length}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Total Spent:</span>
+                            <span class="font-medium">₦${formatNumber(customer.totalSpent)}</span>
+                        </div>
+                        <div>
+                            <span class="text-gray-600">Last Order:</span>
+                            <span class="font-medium">${customer.lastOrderDate.toLocaleDateString()}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-4 max-h-96 overflow-y-auto">
+                    <h6 class="font-semibold text-gray-900 mb-3">Order History</h6>
+                    ${customer.orders.map(order => {
+                const orderDate = new Date(order.timestamp || order.createdAt?.toDate?.() || Date.now());
+                const statusColors = {
+                    pending: 'bg-yellow-100 text-yellow-800',
+                    processing: 'bg-blue-100 text-blue-800',
+                    ready: 'bg-green-100 text-green-800',
+                    delivered: 'bg-purple-100 text-purple-800'
+                };
+                const statusColor = statusColors[order.status] || statusColors.pending;
+
+                return `
+                            <div class="bg-white rounded-lg p-4 border border-gray-200">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-medium text-gray-900">Order #${order.id.substring(0, 8)}</span>
+                                    <span class="px-2 py-1 rounded-full text-xs font-medium ${statusColor}">
+                                        ${(order.status || 'pending').toUpperCase()}
+                                    </span>
+                                </div>
+                                <div class="text-sm text-gray-600 space-y-1">
+                                    <p><strong>Date:</strong> ${orderDate.toLocaleDateString()} ${orderDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                    <p><strong>Amount:</strong> ₦${parseFloat(order.totalAmount || 0).toFixed(2)}</p>
+                                    <p><strong>Items:</strong> ${order.items ? order.items.length : 0} service(s)</p>
+                                    ${order.paymentStatus ? `<p><strong>Payment:</strong> ${order.paymentStatus.toUpperCase()}</p>` : ''}
+                                </div>
+                            </div>
+                        `;
+            }).join('')}
+                </div>
+            `;
+        }
+
+        function hideOrderDetails() {
+            const isMobile = window.innerWidth < 1024;
+
+            if (isMobile) {
+                // Mobile: Show customer list, hide order details
+                document.getElementById('customerListContainer').classList.remove('hidden');
+            }
+
+            document.getElementById('orderDetailsContainer').classList.add('hidden');
+        }
+    </script>
+</body>
+
+</html>

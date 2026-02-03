@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place New Order - Laundry Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/img/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./assets/img/favicon/site.webmanifest">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-functions-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid #e5e7eb;
+            border-top-color: #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Service Cards */
+        .service-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .service-card:hover::before {
+            left: 100%;
+        }
+
+        .service-card.selected {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.05), rgba(168, 85, 247, 0.05));
+            border-color: #9333ea !important;
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(147, 51, 234, 0.15);
+        }
+
+        .service-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-card.selected:hover {
+            transform: scale(1.02) translateY(-2px);
+        }
+
+        .service-card-compact {
+            min-width: 280px;
+            flex-shrink: 0;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+    </style>
+</head>
+
+<body class="antialiased min-h-screen">
+
+    <div id="toast"
+        class="fixed top-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-xl transform translate-x-full transition-transform duration-300 z-[9999] flex items-center gap-3">
+        <i class="fas fa-info-circle"></i>
+        <span id="toastMsg">Notification</span>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img src="./assets/img/blue-logo.png" alt="Logo" class="w-8 h-8">
+                <h1 class="font-bold text-xl tracking-tight text-blue-600">Place New Order</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="./dashboard.html" class="text-gray-600 hover:text-blue-600 transition flex items-center gap-2">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Dashboard
+                </a>
+                <a href="./all-orders.html" class="text-gray-600 hover:text-blue-600 transition">
+                    <i class="fas fa-list-alt"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <form id="newOrderForm">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Main Content -->
+                <div class="lg:col-span-2 space-y-8">
+                    <!-- Customer Information -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 fade-in">
+                        <div class="flex items-center mb-6">
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-user text-blue-600"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">Customer Information</h2>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Customer Name *</label>
+                                <input type="text" id="customerName" required
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    placeholder="Enter customer name">
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Phone Number *</label>
+                                <input type="tel" id="customerPhone" required
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    placeholder="e.g. +234 801 234 5678">
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Customer Address *</label>
+                                <input type="text" id="customerAddress" required
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                    placeholder="Enter customer address">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pickup Details -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 fade-in">
+                        <div class="flex items-center mb-6">
+                            <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-map-marker-alt text-green-600"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">Pickup Details</h2>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Address</label>
+                                <input type="text" id="pickupAddress"
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                    placeholder="Leave empty to use customer address">
+                                <p class="text-xs text-gray-500 mt-1">If different from customer address</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Pickup Date</label>
+                                    <input type="date" id="pickupDate"
+                                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Time Window</label>
+                                    <select id="pickupTime"
+                                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all">
+                                        <option value="">Select time window</option>
+                                        <option value="morning">Morning (8am - 12pm)</option>
+                                        <option value="afternoon">Afternoon (12pm - 5pm)</option>
+                                        <option value="evening">Evening (5pm - 8pm)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Services Selection -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 fade-in">
+                        <div class="flex items-center justify-between mb-6">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-list text-purple-600"></i>
+                                </div>
+                                <h2 class="text-xl font-semibold text-gray-900">Select Services</h2>
+                            </div>
+                            <div class="text-sm text-gray-500">
+                                <span id="servicesCount">0 services</span>
+                            </div>
+                        </div>
+
+                        <!-- Search Input -->
+                        <div class="mb-6">
+                            <div class="relative">
+                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                                <input type="text" id="serviceSearchInput"
+                                    placeholder="Search services (e.g., shirt, shoes, dry cleaning...)"
+                                    class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                                    onkeyup="searchServices()">
+                            </div>
+                        </div>
+
+                        <div id="servicesLoadingState" class="text-center py-12">
+                            <div class="spinner mx-auto mb-4"></div>
+                            <p class="text-gray-600">Loading available services...</p>
+                        </div>
+
+                        <div id="servicesContainer" class="hidden">
+                            <!-- Featured Services (First 3) -->
+                            <div id="featuredServices" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                                <!-- Featured services will be loaded here -->
+                            </div>
+
+                            <!-- More Services Carousel -->
+                            <div id="moreServicesSection" class="hidden">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-medium text-gray-900">More Services</h3>
+                                    <button onclick="showAllServicesModal()"
+                                        class="text-purple-600 hover:text-purple-700 font-medium text-sm flex items-center gap-2 transition">
+                                        <span>View All</span>
+                                        <i class="fas fa-external-link-alt text-xs"></i>
+                                    </button>
+                                </div>
+                                <div class="relative">
+                                    <div id="servicesCarousel" class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                                        <!-- Carousel services will be loaded here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="noServicesMessage" class="hidden text-center py-12">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+                            <p class="text-gray-600 text-lg font-medium">No services available</p>
+                            <p class="text-gray-500">Please contact admin to add services.</p>
+                        </div>
+
+                        <div id="noSearchResults" class="hidden text-center py-8">
+                            <i class="fas fa-search text-gray-300 text-3xl mb-3"></i>
+                            <p class="text-gray-600 font-medium">No services found</p>
+                            <p class="text-gray-500 text-sm">Try different keywords or browse all services</p>
+                        </div>
+                    </div>
+
+                    <!-- Payment & Special Instructions -->
+                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 fade-in">
+                        <div class="flex items-center mb-6">
+                            <div class="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+                                <i class="fas fa-credit-card text-orange-600"></i>
+                            </div>
+                            <h2 class="text-xl font-semibold text-gray-900">Payment & Details</h2>
+                        </div>
+
+                        <div class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
+                                    <select id="paymentMethod"
+                                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                                        <option value="cash">Cash</option>
+                                        <option value="card">Card</option>
+                                        <option value="transfer">Bank Transfer</option>
+                                        <option value="mobile">Mobile Money</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Payment Status</label>
+                                    <select id="paymentStatus"
+                                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all">
+                                        <option value="pending">Pending</option>
+                                        <option value="paid">Paid</option>
+                                        <option value="partial">Partial Payment</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Special Instructions</label>
+                                <textarea id="specialInstructions" rows="4"
+                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all resize-none"
+                                    placeholder="Any special care instructions, stain details, or notes..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Order Summary Sidebar -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-24 fade-in">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="text-xl font-semibold text-gray-900">Order Summary</h3>
+                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-receipt text-blue-600"></i>
+                            </div>
+                        </div>
+
+                        <div id="orderSummaryItems" class="space-y-4 mb-6">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-shopping-bag text-4xl mb-2 text-gray-300"></i>
+                                <p>No services selected</p>
+                            </div>
+                        </div>
+
+                        <div class="border-t border-gray-200 pt-4 space-y-3">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Subtotal</span>
+                                <span class="text-gray-900 font-medium" id="subtotalAmount">₦0.00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Tax (7.5%)</span>
+                                <span class="text-gray-900 font-medium" id="taxAmount">₦0.00</span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-gray-600">Pickup & Delivery</span>
+                                <span class="text-green-600 font-medium">FREE</span>
+                            </div>
+                            <div class="border-t border-gray-200 pt-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-lg font-semibold text-gray-900">Total</span>
+                                    <span class="text-2xl font-bold text-blue-600" id="totalAmount">₦0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit"
+                            class="w-full mt-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 px-6 rounded-xl transition flex items-center justify-center gap-2 font-semibold">
+                            <i class="fas fa-save"></i>
+                            Create Order
+                        </button>
+
+                        <button type="button" onclick="resetForm()"
+                            class="w-full mt-3 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-xl transition flex items-center justify-center gap-2 font-medium">
+                            <i class="fas fa-undo"></i>
+                            Reset Form
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </main>
+
+    <!-- All Services Modal -->
+    <div id="allServicesModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden fade-in">
+            <div class="bg-gradient-to-r from-purple-500 to-blue-600 p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold">All Services</h3>
+                        <p class="text-purple-100 mt-1">Choose from our complete range of services</p>
+                    </div>
+                    <button onclick="closeAllServicesModal()" class="text-white/80 hover:text-white transition">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <!-- Modal Search -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                        <input type="text" id="modalServiceSearch" placeholder="Search all services..."
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                            onkeyup="searchModalServices()">
+                    </div>
+                </div>
+
+                <!-- All Services Grid -->
+                <div id="allServicesGrid"
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                    <!-- All services will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global Variables
+        let allServices = [];
+        let filteredServices = [];
+        let selectedServices = [];
+
+        // Service icon mapping based on keywords
+        function getServiceIcon(serviceName, description = '') {
+            const text = (serviceName + ' ' + description).toLowerCase();
+
+            // Clothing items
+            if (text.includes('shirt') || text.includes('blouse') || text.includes('top')) {
+                return 'fas fa-tshirt';
+            }
+            if (text.includes('trouser') || text.includes('pant') || text.includes('jean') || text.includes('slack')) {
+                return 'fas fa-user-tie';
+            }
+            if (text.includes('dress') || text.includes('gown') || text.includes('skirt')) {
+                return 'fas fa-female';
+            }
+            if (text.includes('suit') || text.includes('blazer') || text.includes('jacket')) {
+                return 'fas fa-user-tie';
+            }
+            if (text.includes('underwear') || text.includes('brief') || text.includes('boxer') || text.includes('bra')) {
+                return 'fas fa-tshirt';
+            }
+
+            // Footwear
+            if (text.includes('shoe') || text.includes('boot') || text.includes('sneaker') || text.includes('sandal') || text.includes('heel')) {
+                return 'fas fa-shoe-prints';
+            }
+
+            // Accessories
+            if (text.includes('tie') || text.includes('bow tie')) {
+                return 'fas fa-ribbon';
+            }
+            if (text.includes('hat') || text.includes('cap') || text.includes('helmet')) {
+                return 'fas fa-hat-cowboy';
+            }
+            if (text.includes('bag') || text.includes('purse') || text.includes('handbag') || text.includes('backpack')) {
+                return 'fas fa-shopping-bag';
+            }
+            if (text.includes('belt') || text.includes('strap')) {
+                return 'fas fa-grip-lines';
+            }
+
+            // Bedding and household
+            if (text.includes('bed') || text.includes('sheet') || text.includes('pillow') || text.includes('blanket') || text.includes('duvet')) {
+                return 'fas fa-bed';
+            }
+            if (text.includes('curtain') || text.includes('drape')) {
+                return 'fas fa-window-maximize';
+            }
+            if (text.includes('towel') || text.includes('napkin')) {
+                return 'fas fa-bath';
+            }
+            if (text.includes('carpet') || text.includes('rug') || text.includes('mat')) {
+                return 'fas fa-square';
+            }
+
+            // Special services
+            if (text.includes('dry clean') || text.includes('chemical')) {
+                return 'fas fa-flask';
+            }
+            if (text.includes('iron') || text.includes('press')) {
+                return 'fas fa-fire';
+            }
+            if (text.includes('wash') || text.includes('laundry')) {
+                return 'fas fa-soap';
+            }
+            if (text.includes('starch')) {
+                return 'fas fa-spray-can';
+            }
+
+            // Default icon
+            return 'fas fa-tshirt';
+        }
+
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCGBqbJk546uJChQUrIUUIaXt20FOpnyr8",
+            authDomain: "laundry-management-b5198.firebaseapp.com",
+            projectId: "laundry-management-b5198",
+            appId: "1:253804986338:web:464940df509269255803bb",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM loaded, initializing...');
+            loadServices();
+            setupEventListeners();
+            setMinimumPickupDate();
+        });
+
+        function setMinimumPickupDate() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const dateInput = document.getElementById('pickupDate');
+            if (dateInput) {
+                dateInput.min = tomorrow.toISOString().split('T')[0];
+                dateInput.value = tomorrow.toISOString().split('T')[0];
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('newOrderForm').addEventListener('submit', handleNewOrder);
+
+            // Close modal when clicking outside
+            document.getElementById('allServicesModal').addEventListener('click', function (e) {
+                if (e.target === this) {
+                    closeAllServicesModal();
+                }
+            });
+        }
+
+        async function loadServices() {
+            console.log('Loading services...');
+            try {
+                const currentYear = new Date().getFullYear();
+                console.log('Fetching services for year:', currentYear);
+
+                const snapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`services_${currentYear}`)
+                    .orderBy('name')
+                    .get();
+
+                console.log('Services snapshot size:', snapshot.size);
+                allServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log('Loaded services:', allServices);
+
+                renderServices();
+
+                if (allServices.length === 0) {
+                    console.warn('No services found for current year, trying to load from previous years...');
+                    await loadServicesFromPreviousYears();
+                }
+            } catch (error) {
+                console.error("Error loading services:", error);
+                showServicesError();
+            }
+        }
+
+        async function loadServicesFromPreviousYears() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const yearsToTry = [currentYear - 1, currentYear - 2];
+
+                for (const year of yearsToTry) {
+                    console.log(`Trying to load services from year ${year}...`);
+                    const snapshot = await db.collection("artifacts")
+                        .doc(firebaseConfig.appId)
+                        .collection("public")
+                        .doc("data")
+                        .collection(`services_${year}`)
+                        .orderBy('name')
+                        .get();
+
+                    if (!snapshot.empty) {
+                        allServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        console.log(`Found ${allServices.length} services from year ${year}`);
+                        renderServices();
+                        showToast(`Loaded services from ${year}. Please contact admin to add current year services.`, "warning");
+                        return;
+                    }
+                }
+
+                console.log('No services found in any year');
+                renderServices(); // This will show the "no services" message
+            } catch (error) {
+                console.error("Error loading services from previous years:", error);
+                showServicesError();
+            }
+        }
+
+        function renderServices() {
+            console.log('Rendering services, count:', allServices.length);
+            const loadingState = document.getElementById('servicesLoadingState');
+            const servicesContainer = document.getElementById('servicesContainer');
+            const noServicesMessage = document.getElementById('noServicesMessage');
+
+            // Hide loading state
+            loadingState.classList.add('hidden');
+
+            if (allServices.length === 0) {
+                console.log('No services found, showing message');
+                servicesContainer.classList.add('hidden');
+                noServicesMessage.classList.remove('hidden');
+                return;
+            }
+
+            console.log('Rendering services');
+            noServicesMessage.classList.add('hidden');
+            servicesContainer.classList.remove('hidden');
+
+            // Update services count
+            document.getElementById('servicesCount').textContent = `${allServices.length} services`;
+
+            // Set filtered services to all services initially
+            filteredServices = [...allServices];
+
+            // Render featured services (first 3)
+            renderFeaturedServices();
+
+            // Render carousel services (remaining)
+            renderCarouselServices();
+
+            // Render all services in modal
+            renderAllServicesModal();
+
+            console.log('Services rendered successfully');
+        }
+
+        function renderFeaturedServices() {
+            const featuredContainer = document.getElementById('featuredServices');
+            const featuredServices = filteredServices.slice(0, 3);
+
+            featuredContainer.innerHTML = featuredServices.map(service => createServiceCard(service, 'featured')).join('');
+        }
+
+        function renderCarouselServices() {
+            const carouselContainer = document.getElementById('servicesCarousel');
+            const moreServicesSection = document.getElementById('moreServicesSection');
+            const carouselServices = filteredServices.slice(3);
+
+            if (carouselServices.length === 0) {
+                moreServicesSection.classList.add('hidden');
+                return;
+            }
+
+            moreServicesSection.classList.remove('hidden');
+            carouselContainer.innerHTML = carouselServices.map(service => createServiceCard(service, 'carousel')).join('');
+        }
+
+        function renderAllServicesModal() {
+            const modalGrid = document.getElementById('allServicesGrid');
+            modalGrid.innerHTML = filteredServices.map(service => createServiceCard(service, 'modal')).join('');
+        }
+
+        function createServiceCard(service, type = 'featured') {
+            const icon = getServiceIcon(service.name, service.description);
+            const isSelected = selectedServices.some(s => s.id === service.id);
+            const selectedService = selectedServices.find(s => s.id === service.id);
+            const quantity = selectedService ? selectedService.quantity : 1;
+
+            const baseClasses = 'service-card bg-white border-2 rounded-2xl p-4 hover:border-purple-300 hover:shadow-md transition-all duration-200 cursor-pointer';
+            const selectedClasses = isSelected ? 'border-purple-500 bg-purple-50 selected' : 'border-gray-200';
+            const typeClasses = type === 'carousel' ? 'service-card-compact' : '';
+
+            return `
+                <div class="${baseClasses} ${selectedClasses} ${typeClasses}" 
+                     onclick="toggleService('${service.id}')" data-service-id="${service.id}">
+                    
+                    <!-- Icon (Center Top) -->
+                    <div class="flex justify-center mb-4">
+                        <div class="w-16 h-16 bg-gradient-to-br from-purple-100 to-blue-100 rounded-full flex items-center justify-center">
+                            <i class="${icon} text-purple-600 text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <!-- Quantity and Checkbox Row -->
+                    <div class="flex items-center justify-between mb-4 max-w-[150px] mx-auto">
+                        <div class="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                            <span class="text-xs text-gray-500 font-medium">Qty:</span>
+                            <input type="number" min="1" max="50" value="${quantity}" 
+                                   class="quantity-input w-12 px-1 py-1 border border-gray-200 rounded text-center text-sm focus:border-purple-500 focus:outline-none bg-white"
+                                   onchange="updateServiceQuantity('${service.id}', this.value)"
+                                   onclick="event.stopPropagation()">
+                        </div>
+                        <div class="service-checkbox w-7 h-7 border-2 ${isSelected ? 'bg-purple-500 border-purple-500' : 'border-gray-300'} rounded-lg flex items-center justify-center transition-all duration-200" data-service="${service.id}">
+                            <i class="fas fa-check text-white text-sm ${isSelected ? '' : 'hidden'}"></i>
+                        </div>
+                    </div>
+
+                    <!-- Service Name -->
+                    <div class="text-center mb-3">
+                        <h4 class="font-semibold text-gray-900 text-lg mb-1">${service.name}</h4>
+                        ${service.description ? `<p class="text-gray-600 text-sm line-clamp-2">${service.description}</p>` : ''}
+                    </div>
+
+                    <!-- Price -->
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-600 mb-1">₦${parseFloat(service.price || 0).toFixed(2)}</div>
+                        <div class="text-gray-500 text-sm">per item</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function searchServices() {
+            const searchTerm = document.getElementById('serviceSearchInput').value.toLowerCase().trim();
+            const noSearchResults = document.getElementById('noSearchResults');
+
+            if (searchTerm === '') {
+                filteredServices = [...allServices];
+                noSearchResults.classList.add('hidden');
+            } else {
+                filteredServices = allServices.filter(service =>
+                    service.name.toLowerCase().includes(searchTerm) ||
+                    (service.description && service.description.toLowerCase().includes(searchTerm))
+                );
+
+                if (filteredServices.length === 0) {
+                    noSearchResults.classList.remove('hidden');
+                } else {
+                    noSearchResults.classList.add('hidden');
+                }
+            }
+
+            // Re-render services with filtered results
+            renderFeaturedServices();
+            renderCarouselServices();
+            renderAllServicesModal();
+
+            // Update services count
+            document.getElementById('servicesCount').textContent = `${filteredServices.length} services`;
+        }
+
+        function searchModalServices() {
+            const searchTerm = document.getElementById('modalServiceSearch').value.toLowerCase().trim();
+            const modalGrid = document.getElementById('allServicesGrid');
+
+            let servicesToShow = filteredServices;
+            if (searchTerm !== '') {
+                servicesToShow = filteredServices.filter(service =>
+                    service.name.toLowerCase().includes(searchTerm) ||
+                    (service.description && service.description.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            modalGrid.innerHTML = servicesToShow.map(service => createServiceCard(service, 'modal')).join('');
+        }
+
+        function showAllServicesModal() {
+            document.getElementById('allServicesModal').classList.remove('hidden');
+            document.getElementById('modalServiceSearch').value = '';
+            renderAllServicesModal();
+        }
+
+        function closeAllServicesModal() {
+            document.getElementById('allServicesModal').classList.add('hidden');
+        }
+
+        function showServicesError() {
+            const loadingState = document.getElementById('servicesLoadingState');
+            const servicesContainer = document.getElementById('servicesContainer');
+            const noServicesMessage = document.getElementById('noServicesMessage');
+
+            loadingState.classList.add('hidden');
+            servicesContainer.classList.add('hidden');
+            noServicesMessage.classList.remove('hidden');
+
+            showToast("Error loading services. Please try again.", "error");
+        }
+
+        function toggleService(serviceId) {
+            console.log('Toggling service:', serviceId);
+            const serviceCards = document.querySelectorAll(`[data-service-id="${serviceId}"]`);
+
+            const service = allServices.find(s => s.id === serviceId);
+            if (!service) {
+                console.error('Service not found:', serviceId);
+                return;
+            }
+
+            const existingIndex = selectedServices.findIndex(s => s.id === serviceId);
+            let quantity = 1;
+
+            // Get quantity from any of the cards
+            const firstCard = serviceCards[0];
+            if (firstCard) {
+                quantity = parseInt(firstCard.querySelector('.quantity-input').value) || 1;
+            }
+
+            if (existingIndex >= 0) {
+                // Deselect service
+                selectedServices.splice(existingIndex, 1);
+
+                // Update all cards for this service
+                serviceCards.forEach(card => {
+                    card.classList.remove('border-purple-500', 'bg-purple-50', 'selected');
+                    card.classList.add('border-gray-200');
+
+                    const checkbox = card.querySelector('.service-checkbox');
+                    const checkIcon = checkbox.querySelector('i');
+                    checkbox.classList.remove('bg-purple-500', 'border-purple-500');
+                    checkbox.classList.add('border-gray-300');
+                    checkIcon.classList.add('hidden');
+                });
+            } else {
+                // Select service
+                selectedServices.push({ ...service, quantity });
+
+                // Update all cards for this service
+                serviceCards.forEach(card => {
+                    card.classList.remove('border-gray-200');
+                    card.classList.add('border-purple-500', 'bg-purple-50', 'selected');
+
+                    const checkbox = card.querySelector('.service-checkbox');
+                    const checkIcon = checkbox.querySelector('i');
+                    checkbox.classList.remove('border-gray-300');
+                    checkbox.classList.add('bg-purple-500', 'border-purple-500');
+                    checkIcon.classList.remove('hidden');
+                });
+            }
+
+            updateOrderSummary();
+            console.log('Selected services:', selectedServices);
+        }
+
+        function updateServiceQuantity(serviceId, quantity) {
+            console.log('Updating quantity for service:', serviceId, 'to:', quantity);
+            const service = selectedServices.find(s => s.id === serviceId);
+            const newQuantity = parseInt(quantity) || 1;
+
+            if (service) {
+                service.quantity = newQuantity;
+                updateOrderSummary();
+            }
+
+            // Update all quantity inputs for this service
+            const serviceCards = document.querySelectorAll(`[data-service-id="${serviceId}"]`);
+            serviceCards.forEach(card => {
+                const quantityInput = card.querySelector('.quantity-input');
+                if (quantityInput && quantityInput.value !== quantity) {
+                    quantityInput.value = newQuantity;
+                }
+            });
+        }
+
+        function updateOrderSummary() {
+            const subtotal = selectedServices.reduce((sum, service) => {
+                return sum + (parseFloat(service.price || 0) * (service.quantity || 1));
+            }, 0);
+
+            const tax = subtotal * 0.075;
+            const total = subtotal + tax;
+
+            document.getElementById('subtotalAmount').textContent = `₦${subtotal.toFixed(2)}`;
+            document.getElementById('taxAmount').textContent = `₦${tax.toFixed(2)}`;
+            document.getElementById('totalAmount').textContent = `₦${total.toFixed(2)}`;
+
+            // Update order summary items
+            const orderSummaryItems = document.getElementById('orderSummaryItems');
+
+            if (selectedServices.length === 0) {
+                orderSummaryItems.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-shopping-bag text-4xl mb-2 text-gray-300"></i>
+                        <p>No services selected</p>
+                    </div>
+                `;
+                return;
+            }
+
+            orderSummaryItems.innerHTML = selectedServices.map(service => `
+                <div class="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div class="flex-1">
+                        <p class="font-medium text-gray-900 text-sm">${service.name}</p>
+                        <p class="text-xs text-gray-500">₦${parseFloat(service.price || 0).toFixed(2)} × ${service.quantity}</p>
+                    </div>
+                    <span class="font-semibold text-gray-900 ml-4">₦${(parseFloat(service.price || 0) * service.quantity).toFixed(2)}</span>
+                </div>
+            `).join('');
+
+            console.log('Order summary updated:', subtotal, 'Selected items:', selectedServices.length);
+        }
+
+        function resetForm() {
+            document.getElementById('newOrderForm').reset();
+            selectedServices = [];
+            updateOrderSummary();
+
+            // Reset service card selections
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.classList.remove('border-purple-500', 'bg-purple-50', 'selected');
+                card.classList.add('border-gray-200');
+
+                const checkbox = card.querySelector('.service-checkbox');
+                const checkIcon = checkbox.querySelector('i');
+                const quantityInput = card.querySelector('.quantity-input');
+
+                if (checkbox) {
+                    checkbox.classList.remove('bg-purple-500', 'border-purple-500');
+                    checkbox.classList.add('border-gray-300');
+                }
+                if (checkIcon) {
+                    checkIcon.classList.add('hidden');
+                }
+                if (quantityInput) {
+                    quantityInput.value = '1';
+                }
+            });
+
+            // Re-render services to ensure consistency
+            renderFeaturedServices();
+            renderCarouselServices();
+            renderAllServicesModal();
+
+            showToast('Form reset successfully', 'success');
+        }
+
+        function validateForm() {
+            const requiredFields = [
+                { id: 'customerName', name: 'Customer Name' },
+                { id: 'customerPhone', name: 'Phone Number' },
+                { id: 'customerAddress', name: 'Customer Address' }
+            ];
+
+            for (const field of requiredFields) {
+                const element = document.getElementById(field.id);
+                if (!element.value.trim()) {
+                    showToast(`Please fill in ${field.name}`, 'error');
+                    element.focus();
+                    return false;
+                }
+            }
+
+            if (selectedServices.length === 0) {
+                showToast('Please select at least one service', 'error');
+                return false;
+            }
+
+            return true;
+        }
+
+        // Form submission
+        async function handleNewOrder(e) {
+            e.preventDefault();
+
+            if (!validateForm()) {
+                return;
+            }
+
+            // Collect form data
+            const formData = {
+                customer: {
+                    name: document.getElementById('customerName').value,
+                    phone: document.getElementById('customerPhone').value,
+                    address: document.getElementById('customerAddress').value
+                },
+                pickup: {
+                    address: document.getElementById('pickupAddress').value || document.getElementById('customerAddress').value,
+                    date: document.getElementById('pickupDate').value,
+                    time: document.getElementById('pickupTime').value
+                },
+                payment: {
+                    method: document.getElementById('paymentMethod').value,
+                    status: document.getElementById('paymentStatus').value
+                },
+                specialInstructions: document.getElementById('specialInstructions').value,
+                items: selectedServices.map(service => ({
+                    description: service.name,
+                    quantity: service.quantity,
+                    price: service.price
+                })),
+                totalAmount: selectedServices.reduce((sum, service) => sum + (service.price * service.quantity), 0) * 1.075, // Include tax
+                status: 'pending',
+                timestamp: new Date().toISOString(),
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            try {
+                const currentYear = new Date().getFullYear();
+                const docRef = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .add(formData);
+
+                console.log('Order saved with ID:', docRef.id);
+                showToast('Order created successfully!', 'success');
+
+                // Reset form after delay
+                setTimeout(() => {
+                    resetForm();
+                }, 2000);
+
+            } catch (error) {
+                console.error('Error saving order:', error);
+                showToast('Error creating order. Please try again.', 'error');
+            }
+        }
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const icon = toast.querySelector('i');
+
+            toastMsg.textContent = message;
+
+            // Update icon and color based on type
+            switch (type) {
+                case 'success':
+                    icon.className = 'fas fa-check-circle';
+                    toast.className = toast.className.replace('bg-gray-800', 'bg-green-600');
+                    break;
+                case 'error':
+                    icon.className = 'fas fa-exclamation-circle';
+                    toast.className = toast.className.replace('bg-gray-800', 'bg-red-600');
+                    break;
+                case 'warning':
+                    icon.className = 'fas fa-exclamation-triangle';
+                    toast.className = toast.className.replace('bg-gray-800', 'bg-yellow-600');
+                    break;
+                default:
+                    icon.className = 'fas fa-info-circle';
+                    toast.className = toast.className.replace(/bg-\w+-600/, 'bg-gray-800');
+            }
+
+            // Show toast
+            toast.classList.remove('translate-x-full');
+            toast.classList.add('translate-x-0');
+
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('translate-x-0');
+                toast.classList.add('translate-x-full');
+            }, 3000);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,2356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Portal - Laundry Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="apple-touch-icon" sizes="180x180" href="./assets/img/favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="./assets/img/favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="./assets/img/favicon/favicon-16x16.png">
+    <link rel="manifest" href="./assets/img/favicon/site.webmanifest">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(180deg, #667eea92 0%, #764ba212 100%);
+            min-height: 100vh;
+        }
+
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .card-hover {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .service-card:hover::before {
+            left: 100%;
+        }
+
+        .service-card.selected {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+            border-color: #6366f1 !important;
+            transform: scale(1.02);
+            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
+        }
+
+        .service-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-card.selected:hover {
+            transform: scale(1.02) translateY(-2px);
+        }
+
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .service-card-compact {
+            min-width: 280px;
+            flex-shrink: 0;
+        }
+
+        .nav-link.active {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+
+        .mobile-nav-link.active {
+            background: #f3f4f6;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+
+        .mobile-nav-link.active i {
+            color: #4f46e5 !important;
+        }
+
+        .floating-label {
+            position: relative;
+        }
+
+        .floating-label input,
+        .floating-label textarea,
+        .floating-label select {
+            width: 100%;
+            padding: 1rem 1rem 1rem 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            background: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        .floating-label input:focus,
+        .floating-label textarea:focus,
+        .floating-label select:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .floating-label label {
+            position: absolute;
+            left: 1rem;
+            top: 1rem;
+            color: #6b7280;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            background: white;
+            padding: 0 0.5rem;
+        }
+
+        .floating-label input:focus+label,
+        .floating-label input:not(:placeholder-shown)+label,
+        .floating-label textarea:focus+label,
+        .floating-label textarea:not(:placeholder-shown)+label,
+        .floating-label select:focus+label,
+        .floating-label select:not([value=""])+label {
+            top: -0.5rem;
+            left: 0.75rem;
+            font-size: 0.875rem;
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .order-status-badge {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .order-status-badge::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+            transition: left 0.8s;
+        }
+
+        .order-status-badge:hover::before {
+            left: 100%;
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        .slide-in {
+            animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .stats-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="glass-morphism sticky top-0 z-50 border-b border-white/20">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                        <img src="./assets/img/blue-logo.png" alt="Logo" class="w-8 h-8">
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-xl text-white" id="businessName">LaundryPro</h1>
+                        <p class="text-white/70 text-sm">Customer Portal</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Links -->
+                <div class="hidden md:flex items-center gap-6">
+                    <button onclick="switchTab('new-order')"
+                        class="nav-link flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition active"
+                        data-tab="new-order">
+                        <i class="fas fa-plus-circle"></i>
+                        <span>New Order</span>
+                    </button>
+                    <button onclick="switchTab('orders')"
+                        class="nav-link flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+                        data-tab="orders">
+                        <i class="fas fa-list-alt"></i>
+                        <span>My Orders</span>
+                    </button>
+                    <button onclick="switchTab('profile')"
+                        class="nav-link flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition"
+                        data-tab="profile">
+                        <i class="fas fa-user-circle"></i>
+                        <span>Profile</span>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu & Logout -->
+                <div class="flex items-center gap-4">
+                    <!-- Mobile Navigation Menu -->
+                    <div class="md:hidden relative">
+                        <button onclick="toggleMobileMenu()" id="mobileMenuBtn"
+                            class="bg-white/20 hover:bg-white/30 text-white p-2 rounded-lg transition">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <div id="mobileMenu"
+                            class="hidden absolute right-0 top-12 bg-white rounded-xl shadow-2xl border border-gray-100 py-2 min-w-48 z-50">
+                            <button onclick="switchTab('new-order'); closeMobileMenu()"
+                                class="mobile-nav-link w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-3 active"
+                                data-tab="new-order">
+                                <i class="fas fa-plus-circle text-indigo-600"></i>
+                                <span>New Order</span>
+                            </button>
+                            <button onclick="switchTab('orders'); closeMobileMenu()"
+                                class="mobile-nav-link w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                                data-tab="orders">
+                                <i class="fas fa-list-alt text-indigo-600"></i>
+                                <span>My Orders</span>
+                            </button>
+                            <button onclick="switchTab('profile'); closeMobileMenu()"
+                                class="mobile-nav-link w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 flex items-center gap-3"
+                                data-tab="profile">
+                                <i class="fas fa-user-circle text-indigo-600"></i>
+                                <span>Profile</span>
+                            </button>
+                            <hr class="my-2 border-gray-200">
+                            <button onclick="logout()"
+                                class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50 flex items-center gap-3">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Desktop Welcome & Logout -->
+                    <div class="hidden md:block">
+                        <span class="text-white/90 text-sm font-medium" id="customerWelcome">Welcome!</span>
+                    </div>
+                    <button onclick="logout()"
+                        class="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg transition flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="hidden sm:inline">Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass-morphism rounded-3xl shadow-2xl p-8 w-full max-w-md slide-in">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <img src="./assets/img/blue-logo.png" alt="Logo" class="w-12 h-12">
+                </div>
+                <h2 class="text-3xl font-bold text-white mb-2">Welcome Back</h2>
+                <p class="text-white/70">Enter your phone number to access your account</p>
+            </div>
+
+            <form id="loginForm" class="space-y-6">
+                <div class="floating-label">
+                    <input type="tel" id="loginPhone" placeholder=" " required>
+                    <label>Phone Number</label>
+                </div>
+
+                <button type="submit" class="btn-primary w-full py-4 rounded-xl text-lg font-semibold">
+                    <span id="loginBtnText">Access My Account</span>
+                    <div id="loginSpinner" class="loading-spinner hidden inline-block ml-2"></div>
+                </button>
+            </form>
+
+            <div class="mt-8 text-center">
+                <p class="text-white/60 text-sm">
+                    Don't have an account? Contact us to get started.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Portal -->
+    <div id="portalScreen" class="hidden min-h-screen">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="stats-card rounded-2xl p-6 text-center card-hover">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-shopping-bag text-white text-2xl"></i>
+                    </div>
+                    <div class="text-3xl font-bold gradient-text" id="totalOrders">0</div>
+                    <div class="text-gray-600 mt-1 font-medium">Total Orders</div>
+                </div>
+                <div class="stats-card rounded-2xl p-6 text-center card-hover">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-naira-sign text-white text-2xl"></i>
+                    </div>
+                    <div class="text-3xl font-bold gradient-text" id="totalSpent">₦0</div>
+                    <div class="text-gray-600 mt-1 font-medium">Total Spent</div>
+                </div>
+                <div class="stats-card rounded-2xl p-6 text-center card-hover">
+                    <div
+                        class="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-clock text-white text-2xl"></i>
+                    </div>
+                    <div class="text-3xl font-bold gradient-text" id="pendingOrders">0</div>
+                    <div class="text-gray-600 mt-1 font-medium">Pending Orders</div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="glass-morphism rounded-3xl shadow-2xl overflow-hidden">
+                <!-- New Order Tab -->
+                <div id="new-order-tab"
+                    class="tab-content bg-gradient-to-br from-indigo-50 via-white to-purple-50 min-h-screen">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <!-- Main Content -->
+                            <div class="lg:col-span-2 space-y-8">
+                                <!-- Header -->
+                                <div class="mb-8">
+                                    <h1 class="text-4xl font-bold text-gray-900 mb-2">Place New Order</h1>
+                                    <p class="text-gray-600 text-lg">Schedule your premium garment care in seconds.</p>
+                                </div>
+
+                                <!-- Pickup Details Section -->
+                                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                    <div class="flex items-center mb-6">
+                                        <div
+                                            class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-map-marker-alt text-indigo-600"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold text-gray-900">Pickup Details</h2>
+                                    </div>
+
+                                    <div class="space-y-6">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-2">Pickup
+                                                Address</label>
+                                            <div class="relative">
+                                                <input type="text" id="pickupAddress" required
+                                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                                    placeholder="Enter your street address">
+                                                <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                                    <i class="fas fa-map-marker-alt text-gray-400"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Preferred
+                                                    Date</label>
+                                                <input type="date" id="pickupDate" required
+                                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                                            </div>
+                                            <div>
+                                                <label class="block text-sm font-medium text-gray-700 mb-2">Time
+                                                    Window</label>
+                                                <select id="pickupTime" required
+                                                    class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all">
+                                                    <option value="">Select time window</option>
+                                                    <option value="morning">Morning (8am - 12pm)</option>
+                                                    <option value="afternoon">Afternoon (12pm - 5pm)</option>
+                                                    <option value="evening">Evening (5pm - 8pm)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Services Selection -->
+                                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <div class="flex items-center">
+                                            <div
+                                                class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                                                <i class="fas fa-check-circle text-indigo-600"></i>
+                                            </div>
+                                            <h2 class="text-xl font-semibold text-gray-900">Select Services</h2>
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            <span id="servicesCount">0 services</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Search Input -->
+                                    <div class="mb-6">
+                                        <div class="relative">
+                                            <div
+                                                class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <i class="fas fa-search text-gray-400"></i>
+                                            </div>
+                                            <input type="text" id="serviceSearchInput"
+                                                placeholder="Search services (e.g., shirt, shoes, dry cleaning...)"
+                                                class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                                                onkeyup="searchServices()">
+                                        </div>
+                                    </div>
+
+                                    <div id="servicesLoadingState" class="text-center py-12">
+                                        <div class="loading-spinner mx-auto mb-4"></div>
+                                        <p class="text-gray-600">Loading available services...</p>
+                                    </div>
+
+                                    <div id="servicesContainer" class="hidden">
+                                        <!-- Featured Services (First 3) -->
+                                        <div id="featuredServices" class="space-y-4 mb-6">
+                                            <!-- Featured services will be loaded here -->
+                                        </div>
+
+                                        <!-- More Services Carousel -->
+                                        <div id="moreServicesSection" class="hidden">
+                                            <div class="flex items-center justify-between mb-4">
+                                                <h3 class="text-lg font-medium text-gray-900">More Services</h3>
+                                                <button onclick="showAllServicesModal()"
+                                                    class="text-indigo-600 hover:text-indigo-700 font-medium text-sm flex items-center gap-2 transition">
+                                                    <span>View All</span>
+                                                    <i class="fas fa-external-link-alt text-xs"></i>
+                                                </button>
+                                            </div>
+                                            <div class="relative">
+                                                <div id="servicesCarousel"
+                                                    class="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+                                                    <!-- Carousel services will be loaded here -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="noServicesMessage" class="hidden text-center py-12">
+                                        <i class="fas fa-exclamation-triangle text-yellow-500 text-4xl mb-4"></i>
+                                        <p class="text-gray-600 text-lg font-medium">No services available</p>
+                                        <p class="text-gray-500">Please contact us to add services.</p>
+                                    </div>
+
+                                    <div id="noSearchResults" class="hidden text-center py-8">
+                                        <i class="fas fa-search text-gray-300 text-3xl mb-3"></i>
+                                        <p class="text-gray-600 font-medium">No services found</p>
+                                        <p class="text-gray-500 text-sm">Try different keywords or browse all services
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <!-- Special Instructions -->
+                                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+                                    <div class="flex items-center mb-4">
+                                        <div
+                                            class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center mr-3">
+                                            <i class="fas fa-sticky-note text-indigo-600"></i>
+                                        </div>
+                                        <h2 class="text-xl font-semibold text-gray-900">Special Instructions</h2>
+                                    </div>
+                                    <textarea id="specialInstructions" rows="3"
+                                        class="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none"
+                                        placeholder="Any special care instructions or notes..."></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Order Summary Sidebar -->
+                            <div class="lg:col-span-1">
+                                <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 sticky top-8">
+                                    <div class="flex items-center justify-between mb-6">
+                                        <h3 class="text-xl font-semibold text-gray-900">Order Summary</h3>
+                                        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center">
+                                            <i class="fas fa-receipt text-indigo-600"></i>
+                                        </div>
+                                    </div>
+
+                                    <div id="orderSummaryItems" class="space-y-4 mb-6">
+                                        <div class="text-center py-8 text-gray-500">
+                                            <i class="fas fa-shopping-bag text-3xl mb-2"></i>
+                                            <p>No services selected</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="border-t border-gray-200 pt-4 space-y-3">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Service Fee</span>
+                                            <span class="text-gray-900 font-medium" id="serviceFee">₦0.00</span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Pickup & Delivery</span>
+                                            <span class="text-green-600 font-medium">FREE</span>
+                                        </div>
+                                        <div class="border-t border-gray-200 pt-3">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-lg font-semibold text-gray-900">Total Price</span>
+                                                <span class="text-2xl font-bold text-indigo-600"
+                                                    id="orderTotal">₦0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <button type="submit" form="newOrderForm"
+                                        class="w-full mt-6 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                                        <span id="orderBtnText" class="flex items-center justify-center">
+                                            <span>Place Order</span>
+                                            <i class="fas fa-arrow-right ml-2"></i>
+                                        </span>
+                                        <div id="orderSpinner" class="loading-spinner hidden mx-auto"></div>
+                                    </button>
+
+                                    <p class="text-xs text-gray-500 text-center mt-4">
+                                        By placing this order, you agree to our Terms of Service and Privacy Policy.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hidden Form -->
+                        <form id="newOrderForm" class="hidden"></form>
+                    </div>
+                </div>
+
+                <!-- Orders Tab -->
+                <div id="orders-tab" class="tab-content p-8 bg-white hidden">
+                    <div class="max-w-6xl mx-auto">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                            <div>
+                                <h3 class="text-3xl font-bold gradient-text">My Orders</h3>
+                                <p class="text-gray-600">Track your order history and status</p>
+                            </div>
+                            <div class="flex gap-3">
+                                <select id="orderFilter" onchange="filterOrders()"
+                                    class="px-4 py-2 border-2 border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:outline-none">
+                                    <option value="all">All Orders</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="ready">Ready</option>
+                                    <option value="delivered">Delivered</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div id="ordersList" class="space-y-4">
+                            <!-- Orders will be loaded here -->
+                        </div>
+
+                        <div id="noOrdersMessage" class="hidden text-center py-12">
+                            <i class="fas fa-shopping-bag text-gray-300 text-6xl mb-4"></i>
+                            <h4 class="text-xl font-semibold text-gray-600 mb-2">No Orders Yet</h4>
+                            <p class="text-gray-500 mb-6">You haven't placed any orders yet. Start by creating your
+                                first order!</p>
+                            <button onclick="switchTab('new-order')" class="btn-primary px-6 py-3 rounded-lg">
+                                <i class="fas fa-plus mr-2"></i>Place Your First Order
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Profile Tab -->
+                <div id="profile-tab" class="tab-content p-8 bg-white hidden">
+                    <div class="max-w-2xl mx-auto">
+                        <div class="text-center mb-8">
+                            <div
+                                class="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-user text-white text-3xl"></i>
+                            </div>
+                            <h3 class="text-3xl font-bold gradient-text mb-2">My Profile</h3>
+                            <p class="text-gray-600">Manage your account information</p>
+                        </div>
+
+                        <form id="profileForm" class="space-y-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="floating-label">
+                                    <input type="text" id="profileName" placeholder=" " required>
+                                    <label>Full Name</label>
+                                </div>
+                                <div class="floating-label">
+                                    <input type="tel" id="profilePhone" placeholder=" " readonly class="bg-gray-100">
+                                    <label>Phone Number</label>
+                                </div>
+                            </div>
+
+                            <div class="floating-label">
+                                <input type="email" id="profileEmail" placeholder=" ">
+                                <label>Email Address (Optional)</label>
+                            </div>
+
+                            <div class="floating-label">
+                                <textarea id="profileAddress" rows="3" placeholder=" "></textarea>
+                                <label>Default Address</label>
+                            </div>
+
+                            <button type="submit" class="btn-primary w-full py-4 rounded-xl text-lg font-semibold">
+                                <i class="fas fa-save mr-3"></i>
+                                <span id="profileBtnText">Update Profile</span>
+                                <div id="profileSpinner" class="loading-spinner hidden inline-block ml-2"></div>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 transform translate-x-full transition-transform duration-300 z-[9999]">
+        <div class="bg-white rounded-xl shadow-2xl border-l-4 p-4 max-w-sm">
+            <div class="flex items-center gap-3">
+                <div id="toastIcon" class="flex-shrink-0">
+                    <i class="fas fa-info-circle text-blue-500"></i>
+                </div>
+                <div>
+                    <p id="toastMsg" class="font-medium text-gray-800">Notification</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- All Services Modal -->
+    <div id="allServicesModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden slide-in">
+            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 text-white">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-2xl font-bold">All Services</h3>
+                        <p class="text-indigo-100 mt-1">Choose from our complete range of services</p>
+                    </div>
+                    <button onclick="closeAllServicesModal()" class="text-white/80 hover:text-white transition">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <!-- Modal Search -->
+                <div class="mb-6">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <i class="fas fa-search text-gray-400"></i>
+                        </div>
+                        <input type="text" id="modalServiceSearch" placeholder="Search all services..."
+                            class="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                            onkeyup="searchModalServices()">
+                    </div>
+                </div>
+
+                <!-- All Services Grid -->
+                <div id="allServicesGrid"
+                    class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
+                    <!-- All services will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Modal -->
+    <div id="paymentModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden slide-in">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-xl font-bold">Choose Payment Method</h3>
+                    <button onclick="closePaymentModal()" class="text-white/80 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <div class="bg-blue-50 rounded-xl p-4 mb-6">
+                    <div class="flex justify-between items-center">
+                        <span class="font-medium text-gray-700">Order Total:</span>
+                        <span class="text-2xl font-bold gradient-text" id="paymentTotal">₦0.00</span>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <button onclick="selectPaymentMethod('transfer')"
+                        class="payment-method w-full p-4 border-2 border-gray-200 rounded-xl hover:border-green-500 hover:bg-green-50 transition flex items-center gap-4 group">
+                        <div
+                            class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-200 transition">
+                            <i class="fas fa-university text-green-600 text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-semibold text-gray-800">Bank Transfer</div>
+                            <div class="text-sm text-gray-500">Transfer to our bank account</div>
+                        </div>
+                    </button>
+
+                    <button onclick="selectPaymentMethod('cash')"
+                        class="payment-method w-full p-4 border-2 border-gray-200 rounded-xl hover:border-orange-500 hover:bg-orange-50 transition flex items-center gap-4 group">
+                        <div
+                            class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center group-hover:bg-orange-200 transition">
+                            <i class="fas fa-money-bill-wave text-orange-600 text-xl"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-semibold text-gray-800">Pay on Delivery</div>
+                            <div class="text-sm text-gray-500">Cash payment on delivery</div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pay on Delivery Confirmation Modal -->
+    <div id="payOnDeliveryModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden slide-in">
+            <div class="bg-gradient-to-r from-orange-500 to-red-600 p-6 text-white text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-money-bill-wave text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold">Pay on Delivery Selected</h3>
+            </div>
+
+            <div class="p-6 text-center">
+                <div class="mb-6">
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-check text-green-600 text-3xl"></i>
+                    </div>
+                    <h4 id="payOnDeliveryTitle" class="text-xl font-semibold text-gray-800 mb-2">Order Confirmed!</h4>
+                    <p id="payOnDeliveryMessage" class="text-gray-600 mb-4">Your order has been placed successfully. You
+                        can pay with cash when we
+                        deliver your items.</p>
+
+                    <div class="bg-orange-50 rounded-lg p-4 mb-4">
+                        <div class="flex items-center justify-center gap-2 text-orange-700">
+                            <i class="fas fa-info-circle"></i>
+                            <span class="font-medium">Payment on Delivery</span>
+                        </div>
+                        <p class="text-sm text-orange-600 mt-2">Please have the exact amount ready: <span
+                                class="font-bold" id="cashAmount">₦0.00</span></p>
+                    </div>
+                </div>
+
+                <div id="payOnDeliveryButtons" class="space-y-3">
+                    <!-- Buttons will be dynamically updated based on order type -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bank Transfer Details Modal -->
+    <div id="bankTransferModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden slide-in">
+            <div class="bg-gradient-to-r from-green-500 to-blue-600 p-6 text-white text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-university text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold">Bank Transfer Details</h3>
+                <p class="text-green-100 mt-2">Transfer to the account below</p>
+            </div>
+
+            <div class="p-6">
+                <div class="bg-blue-50 rounded-xl p-4 mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-gray-700">Amount to Transfer:</span>
+                        <span class="text-2xl font-bold text-blue-600" id="transferAmount">₦0.00</span>
+                    </div>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-600">Bank Name</p>
+                                <p class="font-semibold text-gray-800">Opay</p>
+                            </div>
+                            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-university text-green-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-600">Account Name</p>
+                                <p class="font-semibold text-gray-800">Iliya Shatami</p>
+                            </div>
+                            <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <i class="fas fa-user text-blue-600"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <p class="text-sm text-gray-600">Account Number</p>
+                                <p class="font-semibold text-gray-800 text-lg" id="accountNumber">8138644405</p>
+                            </div>
+                            <button onclick="copyAccountNumber()"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg transition flex items-center gap-2">
+                                <i class="fas fa-copy"></i>
+                                <span>Copy</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-yellow-50 rounded-lg p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 mt-1"></i>
+                        <div>
+                            <p class="font-medium text-yellow-800 mb-1">Important Note</p>
+                            <p class="text-sm text-yellow-700">After making the transfer, please keep your receipt and
+                                contact us to confirm payment.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="cancelBankTransfer()"
+                        class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button onclick="confirmBankTransfer()"
+                        class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl transition">
+                        <i class="fas fa-check mr-2"></i>
+                        Confirm Order
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Confirmation Modal -->
+    <div id="paymentConfirmationModal"
+        class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden slide-in">
+            <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-6 text-white text-center">
+                <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-credit-card text-3xl"></i>
+                </div>
+                <h3 class="text-xl font-bold">Payment Confirmation</h3>
+                <p class="text-blue-100 mt-2">Have you completed the bank transfer?</p>
+            </div>
+
+            <div class="p-6">
+                <div class="bg-blue-50 rounded-xl p-4 mb-6">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="font-medium text-gray-700">Transfer Amount:</span>
+                        <span class="text-2xl font-bold text-blue-600" id="confirmationAmount">₦0.00</span>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                    <h4 class="font-semibold text-gray-800 mb-3">Bank Details (for reference)</h4>
+                    <div class="space-y-2 text-sm">
+                        <p><strong>Bank:</strong> Opay</p>
+                        <p><strong>Account Name:</strong> Iliya Shatami</p>
+                        <p><strong>Account Number:</strong> 8138644405</p>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <p class="text-gray-600 text-sm mb-4">Please confirm if you have successfully transferred the amount
+                        to the account above:</p>
+
+                    <div class="space-y-3">
+                        <button onclick="confirmPaymentMade()" type="button"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl transition font-semibold flex items-center justify-center gap-2">
+                            <i class="fas fa-check-circle"></i>
+                            Yes, I've made the transfer
+                        </button>
+
+                        <button onclick="paymentNotMade()" type="button"
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-xl transition font-semibold flex items-center justify-center gap-2">
+                            <i class="fas fa-clock"></i>
+                            No, I'll transfer later
+                        </button>
+
+                        <button onclick="closePaymentConfirmationModal()"
+                            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition font-semibold">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCGBqbJk546uJChQUrIUUIaXt20FOpnyr8",
+            authDomain: "laundry-management-b5198.firebaseapp.com",
+            projectId: "laundry-management-b5198",
+            appId: "1:253804986338:web:464940df509269255803bb",
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // Global Variables
+        let currentCustomer = null;
+        let allServices = [];
+        let filteredServices = [];
+        let selectedServices = [];
+        let customerOrders = [];
+
+        // Service icon mapping based on keywords
+        function getServiceIcon(serviceName, description = '') {
+            const text = (serviceName + ' ' + description).toLowerCase();
+
+            // Clothing items
+            if (text.includes('shirt') || text.includes('blouse') || text.includes('top')) {
+                return 'fas fa-tshirt';
+            }
+            if (text.includes('trouser') || text.includes('pant') || text.includes('jean') || text.includes('slack')) {
+                return 'fas fa-user-tie';
+            }
+            if (text.includes('dress') || text.includes('gown') || text.includes('skirt')) {
+                return 'fas fa-female';
+            }
+            if (text.includes('suit') || text.includes('blazer') || text.includes('jacket')) {
+                return 'fas fa-user-tie';
+            }
+            if (text.includes('underwear') || text.includes('brief') || text.includes('boxer') || text.includes('bra')) {
+                return 'fas fa-tshirt';
+            }
+
+            // Footwear
+            if (text.includes('shoe') || text.includes('boot') || text.includes('sneaker') || text.includes('sandal') || text.includes('heel')) {
+                return 'fas fa-shoe-prints';
+            }
+
+            // Accessories
+            if (text.includes('tie') || text.includes('bow tie')) {
+                return 'fas fa-ribbon';
+            }
+            if (text.includes('hat') || text.includes('cap') || text.includes('helmet')) {
+                return 'fas fa-hat-cowboy';
+            }
+            if (text.includes('bag') || text.includes('purse') || text.includes('handbag') || text.includes('backpack')) {
+                return 'fas fa-shopping-bag';
+            }
+            if (text.includes('belt') || text.includes('strap')) {
+                return 'fas fa-grip-lines';
+            }
+
+            // Bedding and household
+            if (text.includes('bed') || text.includes('sheet') || text.includes('pillow') || text.includes('blanket') || text.includes('duvet')) {
+                return 'fas fa-bed';
+            }
+            if (text.includes('curtain') || text.includes('drape')) {
+                return 'fas fa-window-maximize';
+            }
+            if (text.includes('towel') || text.includes('napkin')) {
+                return 'fas fa-bath';
+            }
+            if (text.includes('carpet') || text.includes('rug') || text.includes('mat')) {
+                return 'fas fa-square';
+            }
+
+            // Special services
+            if (text.includes('dry clean') || text.includes('chemical')) {
+                return 'fas fa-flask';
+            }
+            if (text.includes('iron') || text.includes('press')) {
+                return 'fas fa-fire';
+            }
+            if (text.includes('wash') || text.includes('laundry')) {
+                return 'fas fa-soap';
+            }
+            if (text.includes('starch')) {
+                return 'fas fa-spray-can';
+            }
+
+            // Default icon
+            return 'fas fa-tshirt';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log('DOM loaded, initializing...');
+            loadServices();
+            setupEventListeners();
+            setMinimumPickupDate();
+        });
+
+        function setMinimumPickupDate() {
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            const dateInput = document.getElementById('pickupDate');
+            if (dateInput) {
+                dateInput.min = tomorrow.toISOString().split('T')[0];
+                dateInput.value = tomorrow.toISOString().split('T')[0];
+            }
+        }
+
+        function setupEventListeners() {
+            document.getElementById('loginForm').addEventListener('submit', handleLogin);
+            document.getElementById('newOrderForm').addEventListener('submit', handleNewOrder);
+            document.getElementById('profileForm').addEventListener('submit', handleProfileUpdate);
+
+            // Close modal when clicking outside
+            document.getElementById('allServicesModal').addEventListener('click', function (e) {
+                if (e.target === this) {
+                    closeAllServicesModal();
+                }
+            });
+
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', function (e) {
+                const mobileMenu = document.getElementById('mobileMenu');
+                const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+                if (mobileMenu && !mobileMenu.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        }
+
+        async function loadServices() {
+            console.log('Loading services...');
+            try {
+                const currentYear = new Date().getFullYear();
+                console.log('Fetching services for year:', currentYear);
+
+                const snapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`services_${currentYear}`)
+                    .orderBy('name')
+                    .get();
+
+                console.log('Services snapshot size:', snapshot.size);
+                allServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log('Loaded services:', allServices);
+
+                renderServices();
+
+                if (allServices.length === 0) {
+                    console.warn('No services found for current year, trying to load from previous years...');
+                    await loadServicesFromPreviousYears();
+                }
+            } catch (error) {
+                console.error("Error loading services:", error);
+                showServicesError();
+            }
+        }
+
+        async function loadServicesFromPreviousYears() {
+            try {
+                const currentYear = new Date().getFullYear();
+                const yearsToTry = [currentYear - 1, currentYear - 2];
+
+                for (const year of yearsToTry) {
+                    console.log(`Trying to load services from year ${year}...`);
+                    const snapshot = await db.collection("artifacts")
+                        .doc(firebaseConfig.appId)
+                        .collection("public")
+                        .doc("data")
+                        .collection(`services_${year}`)
+                        .orderBy('name')
+                        .get();
+
+                    if (!snapshot.empty) {
+                        allServices = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        console.log(`Found ${allServices.length} services from year ${year}`);
+                        renderServices();
+                        showToast(`Loaded services from ${year}. Please contact admin to add current year services.`, "warning");
+                        return;
+                    }
+                }
+
+                console.log('No services found in any year');
+                renderServices(); // This will show the "no services" message
+            } catch (error) {
+                console.error("Error loading services from previous years:", error);
+                showServicesError();
+            }
+        }
+
+        function renderServices() {
+            console.log('Rendering services, count:', allServices.length);
+            const loadingState = document.getElementById('servicesLoadingState');
+            const servicesContainer = document.getElementById('servicesContainer');
+            const noServicesMessage = document.getElementById('noServicesMessage');
+
+            // Hide loading state
+            loadingState.classList.add('hidden');
+
+            if (allServices.length === 0) {
+                console.log('No services found, showing message');
+                servicesContainer.classList.add('hidden');
+                noServicesMessage.classList.remove('hidden');
+                return;
+            }
+
+            console.log('Rendering services');
+            noServicesMessage.classList.add('hidden');
+            servicesContainer.classList.remove('hidden');
+
+            // Update services count
+            document.getElementById('servicesCount').textContent = `${allServices.length} services`;
+
+            // Set filtered services to all services initially
+            filteredServices = [...allServices];
+
+            // Render featured services (first 3)
+            renderFeaturedServices();
+
+            // Render carousel services (remaining)
+            renderCarouselServices();
+
+            // Render all services in modal
+            renderAllServicesModal();
+
+            console.log('Services rendered successfully');
+        }
+
+        function renderFeaturedServices() {
+            const featuredContainer = document.getElementById('featuredServices');
+            const featuredServices = filteredServices.slice(0, 3);
+
+            featuredContainer.innerHTML = featuredServices.map(service => createServiceCard(service, 'featured')).join('');
+        }
+
+        function renderCarouselServices() {
+            const carouselContainer = document.getElementById('servicesCarousel');
+            const moreServicesSection = document.getElementById('moreServicesSection');
+            const carouselServices = filteredServices.slice(3);
+
+            if (carouselServices.length === 0) {
+                moreServicesSection.classList.add('hidden');
+                return;
+            }
+
+            moreServicesSection.classList.remove('hidden');
+            carouselContainer.innerHTML = carouselServices.map(service => createServiceCard(service, 'carousel')).join('');
+        }
+
+        function renderAllServicesModal() {
+            const modalGrid = document.getElementById('allServicesGrid');
+            modalGrid.innerHTML = filteredServices.map(service => createServiceCard(service, 'modal')).join('');
+        }
+
+        function createServiceCard(service, type = 'featured') {
+            const icon = getServiceIcon(service.name, service.description);
+            const isSelected = selectedServices.some(s => s.id === service.id);
+            const selectedService = selectedServices.find(s => s.id === service.id);
+            const quantity = selectedService ? selectedService.quantity : 1;
+
+            const baseClasses = 'service-card bg-white border-2 rounded-2xl p-4 hover:border-indigo-300 hover:shadow-md transition-all duration-200 cursor-pointer';
+            const selectedClasses = isSelected ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200';
+            const typeClasses = type === 'carousel' ? 'service-card-compact' : '';
+
+            return `
+                <div class="${baseClasses} ${selectedClasses} ${typeClasses}" 
+                     onclick="toggleService('${service.id}')" data-service-id="${service.id}">
+                    
+                    <!-- Icon (Center Top) -->
+                    <div class="flex justify-center mb-4">
+                        <div class="w-16 h-16 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+                            <i class="${icon} text-indigo-600 text-2xl"></i>
+                        </div>
+                    </div>
+
+                    <!-- Quantity and Checkbox Row -->
+                    <div class="flex items-center justify-between mb-4   m-auto max-w-[150px]">
+                        <div class="flex items-center gap-2bg-gray-50  rounded-lg px-3 py-2">
+                            <span class="text-xs text-gray-500 font-medium">Qty:</span>
+                            <input type="number" min="1" max="50" value="${quantity}" 
+                                   class="quantity-input w-12 px-1 py-1 border border-gray-200 rounded text-center text-sm focus:border-indigo-500 focus:outline-none bg-white"
+                                   onchange="updateServiceQuantity('${service.id}', this.value)"
+                                   onclick="event.stopPropagation()">
+                        </div>
+                        <div class="service-checkbox w-7 h-7 border-2 ${isSelected ? 'bg-indigo-500 border-indigo-500' : 'border-gray-300'} rounded-lg flex items-center justify-center transition-all duration-200" data-service="${service.id}">
+                            <i class="fas fa-check text-white text-sm ${isSelected ? '' : 'hidden'}"></i>
+                        </div>
+                    </div>
+
+                    <!-- Service Name -->
+                    <div class="text-center mb-3">
+                        <h4 class="font-semibold text-gray-900 text-lg mb-1">${service.name}</h4>
+                        ${service.description ? `<p class="text-gray-600 text-sm line-clamp-2">${service.description}</p>` : ''}
+                    </div>
+
+                    <!-- Price -->
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-indigo-600 mb-1">₦${parseFloat(service.price || 0).toFixed(2)}</div>
+                        <div class="text-gray-500 text-sm">per item</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function searchServices() {
+            const searchTerm = document.getElementById('serviceSearchInput').value.toLowerCase().trim();
+            const noSearchResults = document.getElementById('noSearchResults');
+
+            if (searchTerm === '') {
+                filteredServices = [...allServices];
+                noSearchResults.classList.add('hidden');
+            } else {
+                filteredServices = allServices.filter(service =>
+                    service.name.toLowerCase().includes(searchTerm) ||
+                    (service.description && service.description.toLowerCase().includes(searchTerm))
+                );
+
+                if (filteredServices.length === 0) {
+                    noSearchResults.classList.remove('hidden');
+                } else {
+                    noSearchResults.classList.add('hidden');
+                }
+            }
+
+            // Re-render services with filtered results
+            renderFeaturedServices();
+            renderCarouselServices();
+            renderAllServicesModal();
+
+            // Update services count
+            document.getElementById('servicesCount').textContent = `${filteredServices.length} services`;
+        }
+
+        function searchModalServices() {
+            const searchTerm = document.getElementById('modalServiceSearch').value.toLowerCase().trim();
+            const modalGrid = document.getElementById('allServicesGrid');
+
+            let servicesToShow = filteredServices;
+            if (searchTerm !== '') {
+                servicesToShow = filteredServices.filter(service =>
+                    service.name.toLowerCase().includes(searchTerm) ||
+                    (service.description && service.description.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            modalGrid.innerHTML = servicesToShow.map(service => createServiceCard(service, 'modal')).join('');
+        }
+
+        function showAllServicesModal() {
+            document.getElementById('allServicesModal').classList.remove('hidden');
+            document.getElementById('modalServiceSearch').value = '';
+            renderAllServicesModal();
+        }
+
+        function closeAllServicesModal() {
+            document.getElementById('allServicesModal').classList.add('hidden');
+        }
+
+        function showServicesError() {
+            const loadingState = document.getElementById('servicesLoadingState');
+            const servicesContainer = document.getElementById('servicesContainer');
+            const noServicesMessage = document.getElementById('noServicesMessage');
+
+            loadingState.classList.add('hidden');
+            servicesContainer.classList.add('hidden');
+            noServicesMessage.classList.remove('hidden');
+
+            showToast("Error loading services. Please try again.", "error");
+        }
+
+        function toggleService(serviceId) {
+            console.log('Toggling service:', serviceId);
+            const serviceCards = document.querySelectorAll(`[data-service-id="${serviceId}"]`);
+
+            const service = allServices.find(s => s.id === serviceId);
+            if (!service) {
+                console.error('Service not found:', serviceId);
+                return;
+            }
+
+            const existingIndex = selectedServices.findIndex(s => s.id === serviceId);
+            let quantity = 1;
+
+            // Get quantity from any of the cards
+            const firstCard = serviceCards[0];
+            if (firstCard) {
+                quantity = parseInt(firstCard.querySelector('.quantity-input').value) || 1;
+            }
+
+            if (existingIndex >= 0) {
+                // Deselect service
+                selectedServices.splice(existingIndex, 1);
+
+                // Update all cards for this service
+                serviceCards.forEach(card => {
+                    card.classList.remove('border-indigo-500', 'bg-indigo-50');
+                    card.classList.add('border-gray-200');
+
+                    const checkbox = card.querySelector('.service-checkbox');
+                    const checkIcon = checkbox.querySelector('i');
+                    checkbox.classList.remove('bg-indigo-500', 'border-indigo-500');
+                    checkbox.classList.add('border-gray-300');
+                    checkIcon.classList.add('hidden');
+                });
+            } else {
+                // Select service
+                selectedServices.push({ ...service, quantity });
+
+                // Update all cards for this service
+                serviceCards.forEach(card => {
+                    card.classList.remove('border-gray-200');
+                    card.classList.add('border-indigo-500', 'bg-indigo-50');
+
+                    const checkbox = card.querySelector('.service-checkbox');
+                    const checkIcon = checkbox.querySelector('i');
+                    checkbox.classList.remove('border-gray-300');
+                    checkbox.classList.add('bg-indigo-500', 'border-indigo-500');
+                    checkIcon.classList.remove('hidden');
+                });
+            }
+
+            updateOrderTotal();
+            console.log('Selected services:', selectedServices);
+        }
+
+        function updateServiceQuantity(serviceId, quantity) {
+            console.log('Updating quantity for service:', serviceId, 'to:', quantity);
+            const service = selectedServices.find(s => s.id === serviceId);
+            const newQuantity = parseInt(quantity) || 1;
+
+            if (service) {
+                service.quantity = newQuantity;
+                updateOrderTotal();
+            }
+
+            // Update all quantity inputs for this service
+            const serviceCards = document.querySelectorAll(`[data-service-id="${serviceId}"]`);
+            serviceCards.forEach(card => {
+                const quantityInput = card.querySelector('.quantity-input');
+                if (quantityInput && quantityInput.value !== quantity) {
+                    quantityInput.value = newQuantity;
+                }
+            });
+        }
+
+        function updateOrderTotal() {
+            const total = selectedServices.reduce((sum, service) => {
+                return sum + (parseFloat(service.price || 0) * (service.quantity || 1));
+            }, 0);
+
+            document.getElementById('orderTotal').textContent = `₦${total.toFixed(2)}`;
+            document.getElementById('serviceFee').textContent = `₦${total.toFixed(2)}`;
+
+            // Update order summary items
+            updateOrderSummary();
+
+            console.log('Order total updated:', total, 'Selected items:', selectedServices.length);
+        }
+
+        function updateOrderSummary() {
+            const orderSummaryItems = document.getElementById('orderSummaryItems');
+
+            if (selectedServices.length === 0) {
+                orderSummaryItems.innerHTML = `
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-shopping-bag text-3xl mb-2"></i>
+                        <p>No services selected</p>
+                    </div>
+                `;
+                return;
+            }
+
+            orderSummaryItems.innerHTML = selectedServices.map(service => `
+                <div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-b-0">
+                    <div class="flex-1">
+                        <h4 class="font-medium text-gray-900">${service.name}</h4>
+                        <p class="text-sm text-gray-500">₦${parseFloat(service.price || 0).toFixed(2)} × ${service.quantity}</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="font-semibold text-gray-900">₦${(parseFloat(service.price || 0) * service.quantity).toFixed(2)}</span>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            console.log('Handling login...');
+
+            const phone = document.getElementById('loginPhone').value.trim();
+            const loginBtn = document.getElementById('loginBtnText');
+            const loginSpinner = document.getElementById('loginSpinner');
+
+            if (!phone) {
+                showToast("Please enter your phone number", "error");
+                return;
+            }
+
+            // Show loading state
+            loginBtn.textContent = 'Logging in...';
+            loginSpinner.classList.remove('hidden');
+
+            try {
+                console.log('Searching for customer with phone:', phone);
+                const currentYear = new Date().getFullYear();
+                const ordersSnapshot = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .where("customer.phone", "==", phone)
+                    .get();
+
+                console.log('Orders found:', ordersSnapshot.size);
+
+                if (ordersSnapshot.empty) {
+                    showToast("No account found with this phone number", "error");
+                    return;
+                }
+
+                // Get customer info from first order
+                const firstOrder = ordersSnapshot.docs[0].data();
+                currentCustomer = {
+                    phone: phone,
+                    name: firstOrder.customer.name,
+                    address: firstOrder.customer.address,
+                    email: firstOrder.customer.email || ''
+                };
+
+                // Load customer orders
+                customerOrders = ordersSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                console.log('Customer loaded:', currentCustomer);
+                console.log('Customer orders:', customerOrders.length);
+
+                showPortal();
+                loadCustomerStats();
+                showToast(`Welcome back, ${currentCustomer.name}!`, "success");
+
+            } catch (error) {
+                console.error("Login error:", error);
+                showToast("Error logging in. Please try again.", "error");
+            } finally {
+                // Reset loading state
+                loginBtn.textContent = 'Access My Account';
+                loginSpinner.classList.add('hidden');
+            }
+        }
+
+        function showPortal() {
+            console.log('Showing portal...');
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('portalScreen').classList.remove('hidden');
+
+            document.getElementById('customerWelcome').textContent = `Welcome, ${currentCustomer.name}`;
+            document.getElementById('profileName').value = currentCustomer.name;
+            document.getElementById('profilePhone').value = currentCustomer.phone;
+            document.getElementById('profileEmail').value = currentCustomer.email;
+            document.getElementById('profileAddress').value = currentCustomer.address;
+
+            loadCustomerOrders();
+        }
+
+        function loadCustomerStats() {
+            const totalOrders = customerOrders.length;
+            const totalSpent = customerOrders.reduce((sum, order) => sum + parseFloat(order.totalAmount || 0), 0);
+            const pendingOrders = customerOrders.filter(order => order.status !== 'delivered').length;
+
+            document.getElementById('totalOrders').textContent = totalOrders;
+            document.getElementById('totalSpent').textContent = `₦${totalSpent.toFixed(2)}`;
+            document.getElementById('pendingOrders').textContent = pendingOrders;
+        }
+
+        function loadCustomerOrders() {
+            const ordersList = document.getElementById('ordersList');
+            const noOrdersMessage = document.getElementById('noOrdersMessage');
+
+            if (customerOrders.length === 0) {
+                ordersList.innerHTML = '';
+                noOrdersMessage.classList.remove('hidden');
+                return;
+            }
+
+            noOrdersMessage.classList.add('hidden');
+            ordersList.innerHTML = customerOrders.map(order => {
+                const statusColors = {
+                    pending: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                    processing: 'bg-blue-100 text-blue-800 border-blue-200',
+                    ready: 'bg-green-100 text-green-800 border-green-200',
+                    delivered: 'bg-purple-100 text-purple-800 border-purple-200'
+                };
+
+                const statusColor = statusColors[order.status] || statusColors.pending;
+                const paymentStatusColor = order.paymentStatus === 'paid' ? 'text-green-600' : 'text-orange-600';
+
+                return `
+                    <div class="bg-white border-2 border-gray-100 rounded-2xl p-6 hover:border-blue-200 transition card-hover">
+                        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-3">
+                                    <h4 class="font-semibold text-gray-800">Order #${order.id.substring(0, 8)}</h4>
+                                    <span class="order-status-badge px-3 py-1 rounded-full text-xs font-semibold border ${statusColor}">
+                                        ${(order.status || 'pending').toUpperCase()}
+                                    </span>
+                                </div>
+                                <p class="text-gray-600 text-sm mb-2">
+                                    <i class="fas fa-calendar mr-2"></i>
+                                    ${new Date(order.timestamp).toLocaleDateString()} at ${new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </p>
+                                <p class="text-gray-600 text-sm">
+                                    <i class="fas fa-list mr-2"></i>
+                                    ${order.items ? order.items.map(item => `${item.description} (${item.quantity})`).join(', ') : 'N/A'}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-2xl font-bold gradient-text mb-1">₦${parseFloat(order.totalAmount || 0).toFixed(2)}</div>
+                                ${order.paymentMethod ? `<p class="text-sm text-gray-500 mb-1">via ${order.paymentMethod}</p>` : ''}
+                                ${order.paymentStatus ? `<p class="text-sm font-medium ${paymentStatusColor}">${order.paymentStatus.toUpperCase()}</p>` : ''}
+                                ${order.paymentStatus !== 'paid' ? `
+                                    <button onclick="payForOrder('${order.id}', ${order.totalAmount})" 
+                                        class="mt-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm transition">
+                                        <i class="fas fa-credit-card mr-1"></i> Pay Now
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function handleNewOrder(e) {
+            e.preventDefault();
+            console.log('Handling new order submission...');
+
+            if (selectedServices.length === 0) {
+                showToast("Please select at least one service", "error");
+                return;
+            }
+
+            // Validate required fields
+            const pickupAddress = document.getElementById('pickupAddress').value.trim();
+            const pickupDate = document.getElementById('pickupDate').value;
+            const pickupTime = document.getElementById('pickupTime').value;
+
+            if (!pickupAddress) {
+                showToast("Please enter your pickup address", "error");
+                return;
+            }
+
+            if (!pickupDate) {
+                showToast("Please select a pickup date", "error");
+                return;
+            }
+
+            if (!pickupTime) {
+                showToast("Please select a time window", "error");
+                return;
+            }
+
+            const orderBtn = document.querySelector('#orderBtnText span');
+            const orderSpinner = document.getElementById('orderSpinner');
+
+            // Show loading state
+            orderBtn.textContent = 'Processing...';
+            orderSpinner.classList.remove('hidden');
+
+            try {
+                const orderData = {
+                    customer: currentCustomer,
+                    items: selectedServices.map(service => ({
+                        description: service.name,
+                        quantity: service.quantity,
+                        price: service.price
+                    })),
+                    totalAmount: selectedServices.reduce((sum, service) => sum + (service.price * service.quantity), 0),
+                    pickupAddress: pickupAddress,
+                    pickupDate: pickupDate,
+                    pickupTime: pickupTime,
+                    specialInstructions: document.getElementById('specialInstructions').value.trim(),
+                    status: 'pending',
+                    paymentStatus: 'pending',
+                    timestamp: new Date().toISOString(),
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                console.log('Order data:', orderData);
+
+                // Show payment modal
+                document.getElementById('paymentTotal').textContent = `₦${orderData.totalAmount.toFixed(2)}`;
+                document.getElementById('paymentModal').classList.remove('hidden');
+
+                // Store order data temporarily
+                window.pendingOrder = orderData;
+
+            } catch (error) {
+                console.error('Error preparing order:', error);
+                showToast("Error preparing order. Please try again.", "error");
+            } finally {
+                // Reset loading state
+                orderBtn.textContent = 'Place Order';
+                orderSpinner.classList.add('hidden');
+            }
+        }
+
+        async function selectPaymentMethod(method) {
+            console.log('Payment method selected:', method);
+            const orderData = window.pendingOrder;
+            console.log('Order data in selectPaymentMethod:', orderData);
+
+            if (!orderData) {
+                console.error('No order data found');
+                showToast('No order data found. Please try again.', 'error');
+                return;
+            }
+
+            orderData.paymentMethod = method;
+
+            // Close the payment method selection modal (but don't clear pendingOrder yet)
+            document.getElementById('paymentModal').classList.add('hidden');
+
+            if (method === 'cash') {
+                // Show pay on delivery confirmation
+                document.getElementById('cashAmount').textContent = `₦${orderData.totalAmount.toFixed(2)}`;
+
+                // Update modal content based on order type
+                if (orderData.isExistingOrder) {
+                    // For existing orders - show cash payment confirmation
+                    document.getElementById('payOnDeliveryTitle').textContent = 'Cash Payment Confirmation';
+                    document.getElementById('payOnDeliveryMessage').textContent = 'Have you already paid for this order with cash?';
+
+                    document.getElementById('payOnDeliveryButtons').innerHTML = `
+                        <button onclick="confirmCashPaymentMade()"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-xl transition font-semibold">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            Yes, I've paid with cash
+                        </button>
+                        
+                        <button onclick="cashPaymentNotMade()"
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-xl transition font-semibold">
+                            <i class="fas fa-clock mr-2"></i>
+                            No, I'll pay on delivery
+                        </button>
+                        
+                        <button onclick="document.getElementById('payOnDeliveryModal').classList.add('hidden'); window.pendingOrder = null; window.payingOrderId = null;"
+                            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition font-semibold">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel
+                        </button>
+                    `;
+                } else {
+                    // For new orders - show order confirmation
+                    document.getElementById('payOnDeliveryTitle').textContent = 'Order Confirmed!';
+                    document.getElementById('payOnDeliveryMessage').textContent = 'Your order has been placed successfully. You can pay with cash when we deliver your items.';
+
+                    document.getElementById('payOnDeliveryButtons').innerHTML = `
+                        <button onclick="closePayOnDeliveryModal()"
+                            class="w-full bg-orange-600 hover:bg-orange-700 text-white py-3 px-4 rounded-xl transition font-semibold">
+                            <i class="fas fa-thumbs-up mr-2"></i>
+                            Got it, Thanks!
+                        </button>
+                        
+                        <button onclick="document.getElementById('payOnDeliveryModal').classList.add('hidden'); window.pendingOrder = null; window.payingOrderId = null;"
+                            class="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-4 rounded-xl transition font-semibold">
+                            <i class="fas fa-times mr-2"></i>
+                            Cancel Order
+                        </button>
+                    `;
+                }
+
+                document.getElementById('payOnDeliveryModal').classList.remove('hidden');
+            } else if (method === 'transfer') {
+                // Show bank transfer details
+                document.getElementById('transferAmount').textContent = `₦${orderData.totalAmount.toFixed(2)}`;
+                document.getElementById('bankTransferModal').classList.remove('hidden');
+            }
+        }
+
+        async function processPayment(method, orderData) {
+            try {
+                showToast("Processing payment...", "info");
+
+                // Simulate payment processing delay
+                await new Promise(resolve => setTimeout(resolve, 2000));
+
+                // For demo purposes, assume payment is successful
+                orderData.paymentStatus = 'paid';
+                orderData.paymentReference = `PAY_${Date.now()}`;
+
+                await saveOrder(orderData);
+                showToast("Payment successful! Order placed.", "success");
+
+            } catch (error) {
+                console.error("Payment error:", error);
+                showToast("Payment failed. Please try again.", "error");
+            }
+        }
+
+        async function saveOrder(orderData) {
+            try {
+                console.log('Saving order:', orderData);
+                const currentYear = new Date().getFullYear();
+                const docRef = await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .add(orderData);
+
+                console.log('Order saved with ID:', docRef.id);
+
+                // Add to local orders array
+                customerOrders.unshift({ id: docRef.id, ...orderData });
+
+                // Reset form
+                resetOrderForm();
+
+                // Update UI
+                loadCustomerStats();
+                loadCustomerOrders();
+
+            } catch (error) {
+                console.error("Error saving order:", error);
+                throw error; // Re-throw to be handled by calling function
+            }
+        }
+
+        async function updateOrderPayment(orderId, paymentData) {
+            try {
+                console.log('Updating order payment:', orderId, paymentData);
+                const currentYear = new Date().getFullYear();
+
+                // Update the order in Firestore
+                await db.collection("artifacts")
+                    .doc(firebaseConfig.appId)
+                    .collection("public")
+                    .doc("data")
+                    .collection(`orders_${currentYear}`)
+                    .doc(orderId)
+                    .update({
+                        ...paymentData,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+
+                console.log('Order payment updated successfully');
+
+                // Update local orders array
+                const orderIndex = customerOrders.findIndex(order => order.id === orderId);
+                if (orderIndex !== -1) {
+                    customerOrders[orderIndex] = { ...customerOrders[orderIndex], ...paymentData };
+                }
+
+                // Update UI
+                loadCustomerStats();
+                loadCustomerOrders();
+
+            } catch (error) {
+                console.error("Error updating order payment:", error);
+                throw error; // Re-throw to be handled by calling function
+            }
+        }
+
+        function resetOrderForm() {
+            // Reset form fields
+            document.getElementById('pickupAddress').value = '';
+            document.getElementById('pickupDate').value = '';
+            document.getElementById('pickupTime').value = '';
+            document.getElementById('specialInstructions').value = '';
+
+            // Reset selected services
+            selectedServices = [];
+            updateOrderTotal();
+
+            // Reset service card selections
+            document.querySelectorAll('.service-card').forEach(card => {
+                card.classList.remove('border-indigo-500', 'bg-indigo-50');
+                card.classList.add('border-gray-200');
+
+                const checkbox = card.querySelector('.service-checkbox');
+                const checkIcon = checkbox.querySelector('i');
+                const quantityInput = card.querySelector('.quantity-input');
+
+                if (checkbox) {
+                    checkbox.classList.remove('bg-indigo-500', 'border-indigo-500');
+                    checkbox.classList.add('border-gray-300');
+                }
+                if (checkIcon) {
+                    checkIcon.classList.add('hidden');
+                }
+                if (quantityInput) {
+                    quantityInput.value = '1';
+                }
+            });
+
+            // Re-render services to ensure consistency
+            renderFeaturedServices();
+            renderCarouselServices();
+            renderAllServicesModal();
+        }
+
+        async function payForOrder(orderId, amount) {
+            console.log('payForOrder called with:', orderId, amount);
+
+            // Find the existing order
+            const existingOrder = customerOrders.find(order => order.id === orderId);
+            if (!existingOrder) {
+                console.error('Order not found:', orderId);
+                showToast('Order not found', 'error');
+                return;
+            }
+
+            console.log('Found existing order:', existingOrder);
+
+            // Create order data for payment processing
+            window.pendingOrder = {
+                ...existingOrder,
+                totalAmount: amount,
+                isExistingOrder: true,
+                orderId: orderId
+            };
+
+            console.log('Set pendingOrder:', window.pendingOrder);
+
+            document.getElementById('paymentTotal').textContent = `₦${amount.toFixed(2)}`;
+            document.getElementById('paymentModal').classList.remove('hidden');
+            window.payingOrderId = orderId;
+        }
+
+        function closePaymentModal() {
+            document.getElementById('paymentModal').classList.add('hidden');
+            // Only clear pending order when explicitly closing the payment modal
+            // (not during payment method selection)
+            window.pendingOrder = null;
+            window.payingOrderId = null;
+        }
+
+        // Pay on Delivery Modal Functions
+        async function closePayOnDeliveryModal() {
+            document.getElementById('payOnDeliveryModal').classList.add('hidden');
+
+            // Save the order with cash payment
+            const orderData = window.pendingOrder;
+            if (orderData) {
+                orderData.paymentStatus = 'pending';
+                orderData.paymentMethod = 'cash';
+
+                try {
+                    if (orderData.isExistingOrder) {
+                        // Update existing order payment status
+                        await updateOrderPayment(orderData.orderId, {
+                            paymentStatus: 'pending',
+                            paymentMethod: 'cash',
+                            paymentNote: 'Pay on delivery selected'
+                        });
+                        showToast('Payment method updated! You can pay on delivery.', 'success');
+                    } else {
+                        // Create new order
+                        await saveOrder(orderData);
+                        showToast('Order placed successfully! You can pay on delivery.', 'success');
+                    }
+
+                    // Clear pending order after successful save
+                    window.pendingOrder = null;
+                    // Switch to orders tab after successful order placement
+                    switchTab('orders');
+                } catch (error) {
+                    console.error('Error processing payment:', error);
+                    showToast('Error processing payment. Please try again.', 'error');
+                }
+            }
+        }
+
+        // Cash payment confirmation for existing orders
+        async function confirmCashPaymentMade() {
+            console.log('confirmCashPaymentMade called');
+            const orderData = window.pendingOrder;
+
+            if (orderData && orderData.isExistingOrder) {
+                try {
+                    await updateOrderPayment(orderData.orderId, {
+                        paymentStatus: 'paid',
+                        paymentMethod: 'cash',
+                        paymentNote: 'Cash payment confirmed by customer'
+                    });
+
+                    document.getElementById('payOnDeliveryModal').classList.add('hidden');
+                    window.pendingOrder = null;
+                    window.payingOrderId = null;
+                    switchTab('orders');
+                    showToast('Cash payment confirmed! Thank you.', 'success');
+                } catch (error) {
+                    console.error('Error confirming cash payment:', error);
+                    showToast('Error confirming payment. Please try again.', 'error');
+                }
+            }
+        }
+
+        async function cashPaymentNotMade() {
+            console.log('cashPaymentNotMade called');
+            const orderData = window.pendingOrder;
+
+            if (orderData && orderData.isExistingOrder) {
+                try {
+                    await updateOrderPayment(orderData.orderId, {
+                        paymentStatus: 'pending',
+                        paymentMethod: 'cash',
+                        paymentNote: 'Will pay cash on delivery'
+                    });
+
+                    document.getElementById('payOnDeliveryModal').classList.add('hidden');
+                    window.pendingOrder = null;
+                    window.payingOrderId = null;
+                    switchTab('orders');
+                    showToast('Payment method updated! You can pay on delivery.', 'info');
+                } catch (error) {
+                    console.error('Error updating payment method:', error);
+                    showToast('Error updating payment method. Please try again.', 'error');
+                }
+            }
+        }
+
+        // Bank Transfer Modal Functions
+        function closeBankTransferModal() {
+            document.getElementById('bankTransferModal').classList.add('hidden');
+            // Clear pending order when canceling
+            window.pendingOrder = null;
+            window.payingOrderId = null;
+        }
+
+        function cancelBankTransfer() {
+            // This function is for when user actually cancels
+            closeBankTransferModal();
+        }
+
+        async function confirmBankTransfer() {
+            const orderData = window.pendingOrder;
+            if (orderData) {
+                // Close bank transfer modal and show payment confirmation
+                // Don't call closeBankTransferModal() as it clears pendingOrder
+                document.getElementById('bankTransferModal').classList.add('hidden');
+                document.getElementById('confirmationAmount').textContent = `₦${orderData.totalAmount.toFixed(2)}`;
+                document.getElementById('paymentConfirmationModal').classList.remove('hidden');
+            }
+        }
+
+        // Payment Confirmation Modal Functions
+        function closePaymentConfirmationModal() {
+            document.getElementById('paymentConfirmationModal').classList.add('hidden');
+            // Clear pending order when canceling
+            window.pendingOrder = null;
+            window.payingOrderId = null;
+        }
+
+        async function confirmPaymentMade() {
+            console.log('confirmPaymentMade called');
+
+            const orderData = window.pendingOrder;
+            console.log('Order data:', orderData);
+
+            if (orderData) {
+                orderData.paymentStatus = 'paid';
+                orderData.paymentMethod = 'transfer';
+                orderData.paymentNote = 'Bank transfer - customer confirmed payment made';
+
+                try {
+                    if (orderData.isExistingOrder) {
+                        console.log('Updating existing order payment');
+                        // Update existing order payment status
+                        await updateOrderPayment(orderData.orderId, {
+                            paymentStatus: 'paid',
+                            paymentMethod: 'transfer',
+                            paymentNote: 'Bank transfer - customer confirmed payment made'
+                        });
+                        showToast('Payment confirmed! We will verify your payment shortly.', 'success');
+                    } else {
+                        console.log('Creating new order');
+                        // Create new order
+                        await saveOrder(orderData);
+                        showToast('Order placed successfully! We will verify your payment shortly.', 'success');
+                    }
+
+                    // Clear pending order after successful save
+                    window.pendingOrder = null;
+                    closePaymentConfirmationModal();
+                    switchTab('orders');
+                } catch (error) {
+                    console.error('Error processing payment:', error);
+                    showToast('Error processing payment. Please try again.', 'error');
+                }
+            } else {
+                console.error('No order data found');
+                showToast('No order data found. Please try again.', 'error');
+            }
+        }
+
+        async function paymentNotMade() {
+            console.log('paymentNotMade called');
+
+            const orderData = window.pendingOrder;
+            console.log('Order data:', orderData);
+
+            if (orderData) {
+                orderData.paymentStatus = 'pending';
+                orderData.paymentMethod = 'transfer';
+                orderData.paymentNote = 'Bank transfer - customer will transfer later';
+
+                try {
+                    if (orderData.isExistingOrder) {
+                        console.log('Updating existing order payment');
+                        // Update existing order payment status
+                        await updateOrderPayment(orderData.orderId, {
+                            paymentStatus: 'pending',
+                            paymentMethod: 'transfer',
+                            paymentNote: 'Bank transfer - customer will transfer later'
+                        });
+                        showToast('Payment method updated! Please complete the bank transfer when ready.', 'info');
+                    } else {
+                        console.log('Creating new order');
+                        // Create new order
+                        await saveOrder(orderData);
+                        showToast('Order placed! Please complete the bank transfer when ready.', 'info');
+                    }
+
+                    // Clear pending order after successful save
+                    window.pendingOrder = null;
+                    closePaymentConfirmationModal();
+                    switchTab('orders');
+                } catch (error) {
+                    console.error('Error processing payment:', error);
+                    showToast('Error processing payment. Please try again.', 'error');
+                }
+            } else {
+                console.error('No order data found');
+                showToast('No order data found. Please try again.', 'error');
+            }
+        }
+
+        function copyAccountNumber() {
+            const accountNumber = document.getElementById('accountNumber').textContent;
+
+            // Try to use the modern clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(accountNumber).then(() => {
+                    showCopySuccess();
+                }).catch(() => {
+                    fallbackCopyTextToClipboard(accountNumber);
+                });
+            } else {
+                // Fallback for older browsers
+                fallbackCopyTextToClipboard(accountNumber);
+            }
+        }
+
+        function fallbackCopyTextToClipboard(text) {
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+
+            try {
+                document.execCommand('copy');
+                showCopySuccess();
+            } catch (err) {
+                showToast('Failed to copy account number', 'error');
+            }
+
+            document.body.removeChild(textArea);
+        }
+
+        function showCopySuccess() {
+            // Temporarily change the copy button text
+            const copyBtn = event.target.closest('button');
+            const originalHTML = copyBtn.innerHTML;
+
+            copyBtn.innerHTML = '<i class="fas fa-check"></i><span>Copied!</span>';
+            copyBtn.classList.remove('bg-green-600', 'hover:bg-green-700');
+            copyBtn.classList.add('bg-blue-600');
+
+            setTimeout(() => {
+                copyBtn.innerHTML = originalHTML;
+                copyBtn.classList.remove('bg-blue-600');
+                copyBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+            }, 2000);
+
+            showToast('Account number copied to clipboard!', 'success');
+        }
+
+        async function handleProfileUpdate(e) {
+            e.preventDefault();
+
+            const profileBtn = document.getElementById('profileBtnText');
+            const profileSpinner = document.getElementById('profileSpinner');
+
+            // Show loading state
+            profileBtn.textContent = 'Updating...';
+            profileSpinner.classList.remove('hidden');
+
+            try {
+                const updatedProfile = {
+                    name: document.getElementById('profileName').value,
+                    email: document.getElementById('profileEmail').value,
+                    address: document.getElementById('profileAddress').value
+                };
+
+                // Update current customer object
+                Object.assign(currentCustomer, updatedProfile);
+
+                showToast("Profile updated successfully!", "success");
+            } catch (error) {
+                console.error('Error updating profile:', error);
+                showToast("Error updating profile. Please try again.", "error");
+            } finally {
+                // Reset loading state
+                profileBtn.textContent = 'Update Profile';
+                profileSpinner.classList.add('hidden');
+            }
+        }
+
+        function switchTab(tabName) {
+            console.log('Switching to tab:', tabName);
+
+            // Update desktop navigation links
+            document.querySelectorAll('.nav-link').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Update mobile navigation links
+            document.querySelectorAll('.mobile-nav-link').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Set active state for current tab
+            const activeDesktopBtn = document.querySelector(`.nav-link[data-tab="${tabName}"]`);
+            const activeMobileBtn = document.querySelector(`.mobile-nav-link[data-tab="${tabName}"]`);
+
+            if (activeDesktopBtn) activeDesktopBtn.classList.add('active');
+            if (activeMobileBtn) activeMobileBtn.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+        }
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        function closeMobileMenu() {
+            document.getElementById('mobileMenu').classList.add('hidden');
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function (e) {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+
+            if (!mobileMenu?.contains(e.target) && !mobileMenuBtn?.contains(e.target)) {
+                mobileMenu?.classList.add('hidden');
+            }
+        });
+
+        // Close modals when clicking outside
+        document.addEventListener('click', function (e) {
+            if (e.target.id === 'payOnDeliveryModal') {
+                // Just close the modal without placing order when clicking outside
+                document.getElementById('payOnDeliveryModal').classList.add('hidden');
+                window.pendingOrder = null;
+                window.payingOrderId = null;
+            }
+            if (e.target.id === 'bankTransferModal') {
+                cancelBankTransfer();
+            }
+            if (e.target.id === 'paymentConfirmationModal') {
+                closePaymentConfirmationModal();
+            }
+        });
+
+        function filterOrders() {
+            const filter = document.getElementById('orderFilter').value;
+            // Implementation for filtering orders
+            loadCustomerOrders();
+        }
+
+        function logout() {
+            console.log('Logging out...');
+            currentCustomer = null;
+            customerOrders = [];
+            selectedServices = [];
+
+            document.getElementById('portalScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginForm').reset();
+
+            showToast("Logged out successfully", "info");
+        }
+
+        function showToast(message, type = 'info') {
+            console.log('Toast:', type, message);
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.textContent = message;
+
+            // Update icon and colors based on type
+            let iconClass = 'fas fa-info-circle text-blue-500';
+            let borderClass = 'border-blue-500';
+
+            switch (type) {
+                case 'success':
+                    iconClass = 'fas fa-check-circle text-green-500';
+                    borderClass = 'border-green-500';
+                    break;
+                case 'error':
+                    iconClass = 'fas fa-exclamation-circle text-red-500';
+                    borderClass = 'border-red-500';
+                    break;
+                case 'warning':
+                    iconClass = 'fas fa-exclamation-triangle text-yellow-500';
+                    borderClass = 'border-yellow-500';
+                    break;
+            }
+
+            toastIcon.innerHTML = `<i class="${iconClass}"></i>`;
+            toast.querySelector('.bg-white').className = `bg-white rounded-xl shadow-2xl border-l-4 p-4 max-w-sm ${borderClass}`;
+
+            toast.style.transform = 'translateX(0)';
+
+            setTimeout(() => {
+                toast.style.transform = 'translateX(100%)';
+            }, 4000);
+        }
+    </script>
+</body>
+
+</html>
